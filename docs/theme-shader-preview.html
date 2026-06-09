@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechEvent — WebGL Flowing Gradient</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --text:#fff;--muted:#c8c8e0;--accent:#00ff9d;--accent2:#00d4ff;
+    --grad:linear-gradient(135deg,#00ff9d,#00d4ff);--btn-text:#001a10;
+    --font:'Helvetica Neue',Helvetica,Arial,sans-serif;--border:rgba(255,255,255,.14);
+  }
+  html,body{height:100%}
+  body{font-family:var(--font);color:#fff;background:#04040a;overflow-x:hidden}
+  #shader{position:fixed;inset:0;z-index:0;display:block;width:100%;height:100%}
+  /* darken overlay for text contrast */
+  .veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse 90% 70% at 50% 0%,transparent,rgba(2,2,8,.55) 80%)}
+  .wrap{position:relative;z-index:10;max-width:1080px;margin:0 auto;padding:0 22px}
+
+  nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px}
+  .logo{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;background:var(--grad);color:var(--btn-text)}
+  .navlinks{display:flex;gap:6px}
+  .navlinks a{padding:7px 13px;border-radius:8px;color:var(--muted);font-size:13.5px;text-decoration:none;font-weight:500}
+  .btn{padding:10px 18px;border-radius:10px;font-size:14px;font-weight:700;border:none;cursor:pointer;background:var(--grad);color:var(--btn-text);text-decoration:none;display:inline-block;font-family:var(--font)}
+  .btn-outline{background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;backdrop-filter:blur(8px)}
+
+  .hero{text-align:center;padding:70px 0 50px}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(255,255,255,.08);border:1px solid var(--border);color:#fff;backdrop-filter:blur(10px);margin-bottom:24px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .hero h1{font-size:clamp(38px,6.5vw,68px);line-height:1.03;letter-spacing:-.03em;font-weight:800;margin-bottom:18px;text-shadow:0 4px 50px rgba(0,0,0,.4)}
+  .gtext{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{color:var(--muted);font-size:17px;line-height:1.6;max-width:540px;margin:0 auto 28px}
+  .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+  .sec{padding:34px 0}
+  .sec-label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+  .sec-title{font-size:25px;font-weight:700;letter-spacing:-.02em;margin-bottom:22px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:800px){.grid{grid-template-columns:1fr}}
+  .card{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:16px;overflow:hidden;backdrop-filter:blur(16px);box-shadow:0 8px 40px rgba(0,0,0,.4);transition:transform .18s}
+  .card:hover{transform:translateY(-4px)}
+  .card-img{height:140px;position:relative;display:flex;align-items:center;justify-content:center;font-size:42px;background:linear-gradient(135deg,rgba(0,255,157,.3),rgba(0,212,255,.3))}
+  .pill{position:absolute;padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700}
+  .pill-cat{top:12px;left:12px;background:rgba(0,0,0,.5);color:#fff;backdrop-filter:blur(6px);text-transform:uppercase}
+  .pill-price{top:12px;right:12px;background:var(--accent);color:var(--btn-text)}
+  .card-body{padding:16px}
+  .card-date{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px}
+  .card-title{font-size:16px;font-weight:700;margin-bottom:8px}
+  .card-meta{font-size:13px;color:var(--muted)}
+  footer{text-align:center;padding:50px 0 40px;color:var(--muted);font-size:13px;position:relative;z-index:10}
+  .controls{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:8px;background:rgba(10,10,18,.7);backdrop-filter:blur(12px);padding:8px 10px;border-radius:12px;border:1px solid var(--border)}
+  .controls button{padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
+  .controls button.active{background:var(--grad);color:var(--btn-text);border-color:transparent}
+</style>
+</head>
+<body>
+  <canvas id="shader"></canvas>
+  <div class="veil"></div>
+
+  <div class="wrap">
+    <nav>
+      <div class="brand"><div class="logo">TE</div> TechEvent</div>
+      <div class="navlinks"><a href="#">Discover</a><a href="#">Organisers</a><a href="#">Pricing</a></div>
+      <a class="btn" href="#">Get started</a>
+    </nav>
+    <section class="hero">
+      <div class="badge"><span class="dot"></span> HACK FOR HYDERABAD · Registrations open</div>
+      <h1>Run your next<br><span class="gtext">tech event</span> like clockwork.</h1>
+      <p>Beautiful event pages, instant checkout, calendar invites, and QR check-in at the door — built for Indian hackathons & meetups.</p>
+      <div class="row"><a class="btn" href="#">Create your event →</a><a class="btn btn-outline" href="#">Browse events</a></div>
+    </section>
+    <section class="sec">
+      <div class="sec-label">Upcoming · Hyderabad</div>
+      <div class="sec-title">Discover events near you</div>
+      <div class="grid">
+        <div class="card"><div class="card-img">🏆<span class="pill pill-cat">Hackathon</span><span class="pill pill-price">₹499</span></div><div class="card-body"><div class="card-date">DEC 14 · SAT · 9:00 AM</div><div class="card-title">Hack for Hyderabad 2026</div><div class="card-meta">📍 Draper Startup House</div></div></div>
+        <div class="card"><div class="card-img">🤖<span class="pill pill-cat">Workshop</span><span class="pill pill-price">FREE</span></div><div class="card-body"><div class="card-date">DEC 20 · FRI · 6:00 PM</div><div class="card-title">Building AI Agents with n8n</div><div class="card-meta">📍 SNIST Campus</div></div></div>
+        <div class="card"><div class="card-img">🎤<span class="pill pill-cat">Conference</span><span class="pill pill-price">₹1,499</span></div><div class="card-body"><div class="card-date">JAN 18 · SAT · 9:00 AM</div><div class="card-title">AI Summit 2026</div><div class="card-meta">📍 Microsoft HYD</div></div></div>
+      </div>
+    </section>
+    <footer>© 2026 TechEvent — real WebGL shader gradient. Bold preset.</footer>
+  </div>
+
+  <div class="controls">
+    <button class="active" onclick="setPalette(0,this)">Mint / Cyan</button>
+    <button onclick="setPalette(1,this)">Mint / Violet</button>
+    <button onclick="setPalette(2,this)">Sunset</button>
+    <button onclick="setPalette(3,this)">Electric Blue</button>
+  </div>
+
+<script>
+const canvas = document.getElementById('shader');
+const gl = canvas.getContext('webgl', {antialias:false, alpha:false});
+
+const vert = `
+attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+
+const frag = `
+precision highp float;
+uniform vec2 u_res; uniform float u_time;
+uniform vec3 u_c1; uniform vec3 u_c2; uniform vec3 u_c3; uniform vec3 u_c4;
+
+// Ashima simplex noise 2D
+vec3 mod289(vec3 x){return x-floor(x*(1./289.))*289.;}
+vec2 mod289(vec2 x){return x-floor(x*(1./289.))*289.;}
+vec3 permute(vec3 x){return mod289(((x*34.)+1.)*x);}
+float snoise(vec2 v){
+  const vec4 C=vec4(.211324865,.366025404,-.577350269,.024390244);
+  vec2 i=floor(v+dot(v,C.yy)); vec2 x0=v-i+dot(i,C.xx);
+  vec2 i1=(x0.x>x0.y)?vec2(1.,0.):vec2(0.,1.);
+  vec4 x12=x0.xyxy+C.xxzz; x12.xy-=i1;
+  i=mod289(i);
+  vec3 perm=permute(permute(i.y+vec3(0.,i1.y,1.))+i.x+vec3(0.,i1.x,1.));
+  vec3 m=max(.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.);
+  m=m*m; m=m*m;
+  vec3 x=2.*fract(perm*C.www)-1.; vec3 h=abs(x)-.5; vec3 ox=floor(x+.5); vec3 a0=x-ox;
+  m*=1.79284291-.85373473*(a0*a0+h*h);
+  vec3 g; g.x=a0.x*x0.x+h.x*x0.y; g.yz=a0.yz*x12.xz+h.yz*x12.yw;
+  return 130.*dot(m,g);
+}
+float fbm(vec2 p){
+  float s=0., a=.5;
+  for(int i=0;i<5;i++){ s+=a*snoise(p); p*=2.02; a*=.5; }
+  return s;
+}
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res.xy;
+  vec2 p=uv; p.x*=u_res.x/u_res.y;
+  float t=u_time*.07;
+  // domain warp — flowing
+  vec2 q=vec2(fbm(p+vec2(0.,t)), fbm(p+vec2(5.2,1.3-t)));
+  vec2 r=vec2(fbm(p+1.7*q+vec2(8.3,2.8)+t*1.2), fbm(p+1.7*q+vec2(2.1,9.2)-t));
+  float f=fbm(p+2.2*r);
+  f=clamp(f*.6+.5,0.,1.);
+  float g=clamp(length(r)*.7,0.,1.);
+  // bold palette mixing
+  vec3 col=mix(u_c1,u_c2,smoothstep(.15,.75,f));
+  col=mix(col,u_c3,smoothstep(.35,.95,g));
+  col=mix(col,u_c4,smoothstep(.6,1.,f*g+.15));
+  // darken toward base for contrast + depth
+  col*= .55+.65*f;
+  // subtle grain to kill banding
+  float grain=fract(sin(dot(gl_FragCoord.xy,vec2(12.9898,78.233)))*43758.5453);
+  col+=(grain-.5)*.025;
+  gl_FragColor=vec4(col,1.);
+}`;
+
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s;}
+const prog=gl.createProgram();
+gl.attachShader(prog,sh(gl.VERTEX_SHADER,vert));
+gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,frag));
+gl.linkProgram(prog);gl.useProgram(prog);
+const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+const loc=gl.getAttribLocation(prog,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const uRes=gl.getUniformLocation(prog,'u_res'),uTime=gl.getUniformLocation(prog,'u_time');
+const uC=[1,2,3,4].map(i=>gl.getUniformLocation(prog,'u_c'+i));
+
+const palettes=[
+  [[0.0,1.0,0.62],[0.0,0.83,1.0],[0.18,0.32,0.95],[0.02,0.02,0.06]], // mint/cyan
+  [[0.0,1.0,0.62],[0.48,0.36,1.0],[0.85,0.3,0.95],[0.04,0.02,0.08]], // mint/violet
+  [[1.0,0.42,0.29],[1.0,0.66,0.3],[0.95,0.2,0.45],[0.08,0.03,0.04]], // sunset
+  [[0.0,0.55,1.0],[0.3,0.2,1.0],[0.0,0.85,1.0],[0.02,0.03,0.09]],    // electric blue
+];
+let pal=palettes[0];
+function setPalette(i,btn){pal=palettes[i];document.querySelectorAll('.controls button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+
+function resize(){const dpr=Math.min(window.devicePixelRatio||1,2);
+  canvas.width=innerWidth*dpr;canvas.height=innerHeight*dpr;gl.viewport(0,0,canvas.width,canvas.height);}
+addEventListener('resize',resize);resize();
+
+const start=performance.now();
+function loop(now){
+  gl.uniform2f(uRes,canvas.width,canvas.height);
+  gl.uniform1f(uTime,(now-start)/1000);
+  gl.uniform3fv(uC[0],pal[0]);gl.uniform3fv(uC[1],pal[1]);gl.uniform3fv(uC[2],pal[2]);gl.uniform3fv(uC[3],pal[3]);
+  gl.drawArrays(gl.TRIANGLES,0,3);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import Navbar from "@/components/Navbar";
+import EventCreateForm from "@/components/dashboard/EventCreateForm";
+import { getCurrentOrganiser } from "@/lib/auth/session";
+
+export const metadata = { title: "Create event · TechEvent" };
+
+export default async function NewEventPage() {
+  const organiser = await getCurrentOrganiser();
+  if (!organiser) redirect("/auth/login");
+
+  return (
+    <>
+      <Navbar />
+      <main className="max-w-2xl mx-auto px-7 py-12">
+        <header className="mb-8">
+          <Link href="/dashboard" className="text-[13px] mb-3 inline-block" style={{ color: "var(--muted)" }}>
+            ← Back to dashboard
+          </Link>
+          <h1 className="sec-title">Create event</h1>
+          <p className="sec-sub mt-2">Tell us the basics. You can edit anything later.</p>
+        </header>
+
+        <div className="card-base p-7">
+          <EventCreateForm />
+        </div>
+      </main>
+    </>
+  );
+}
