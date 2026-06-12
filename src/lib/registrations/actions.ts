@@ -99,9 +99,15 @@ export async function registerAttendeeAction(
   // plus starts_at for reminder scheduling.
   const { data: ev } = await sb
     .from("v_events_public")
-    .select("questions, starts_at")
+    .select("questions, starts_at, ends_at")
     .eq("id", v.event_id)
     .maybeSingle();
+
+  // Registration closes once the event has ended.
+  if (ev?.ends_at && new Date(ev.ends_at).getTime() < Date.now()) {
+    return { ok: false, error: "Registration is closed — this event has already taken place." };
+  }
+
   const questions: EventQuestion[] = Array.isArray(ev?.questions) ? ev!.questions : [];
 
   // Collect + validate answers to the organiser's questions.

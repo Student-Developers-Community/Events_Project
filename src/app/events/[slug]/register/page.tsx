@@ -20,6 +20,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ slug:
 
   const { event, tiers } = data;
   const activeTiers = tiers.filter((t) => !t.is_sold_out);
+  const ended = new Date(event.ends_at).getTime() < Date.now();
 
   return (
     <>
@@ -38,7 +39,15 @@ export default async function RegisterPage({ params }: { params: Promise<{ slug:
           </p>
         </header>
 
-        {activeTiers.length === 0 ? (
+        {ended ? (
+          <div className="card-base p-10 text-center">
+            <div className="text-4xl mb-3 opacity-60">📅</div>
+            <h2 className="font-bold text-lg mb-1">Registration closed</h2>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>
+              This event has already taken place. Registration is no longer open.
+            </p>
+          </div>
+        ) : activeTiers.length === 0 ? (
           <div className="card-base p-10 text-center">
             <div className="text-4xl mb-3 opacity-60">🎟️</div>
             <h2 className="font-bold text-lg mb-1">Sold out</h2>

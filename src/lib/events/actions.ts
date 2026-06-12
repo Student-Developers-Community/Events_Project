@@ -5,8 +5,18 @@ import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { eventCreateSchema, tierCreateSchema, parseQuestionsField } from "./schemas";
 import { slugify, withRandomSuffix } from "./slug";
+import { generateEventDescription, type DescriptionInput, type DescriptionResult } from "@/lib/ai/generate-description";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+/** Generate an event description with AI (organiser-gated). */
+export async function generateDescriptionAction(input: DescriptionInput): Promise<DescriptionResult> {
+  const sb = await getSupabaseServerClient();
+  if (!sb) return { ok: false, error: "Not configured" };
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return { ok: false, error: "Sign in to use AI generation." };
+  return generateEventDescription(input);
+}
 
 /** Insert an event for the current organiser. Status starts as 'draft'. */
 export async function createEventAction(
@@ -146,6 +156,13 @@ export async function updateEventAction(
       contact_phone: v.contact_phone || null,
       questions,
       updated_by: user.id,
+      // Any organiser edit sends the event back for super-admin approval.
+      // approval_status='pending' also hides it from the public view until
+      // re-approved (the public view requires approval_status='approved').
+      approval_status: "pending",
+      approved_at: null,
+      approved_by: null,
+      rejection_reason: null,
     })
     .eq("id", eventId)
     .eq("organiser_id", user.id);
@@ -154,6 +171,8 @@ export async function updateEventAction(
 
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath("/events");
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
   redirect(`/dashboard/events/${eventId}`);
 }
 
@@ -198,7 +217,15 @@ export async function createTierAction(
   });
   if (error) return { ok: false, error: error.message };
 
+  // Changing tiers is an edit too → send back for approval (hides from public
+  // until re-approved). Only matters if it was previously approved.
+  await sb.from("events")
+    .update({ approval_status: "pending", approved_at: null, approved_by: null, rejection_reason: null })
+    .eq("id", v.event_id).eq("organiser_id", user.id).eq("approval_status", "approved");
+
   revalidatePath(`/dashboard/events/${v.event_id}`);
+  revalidatePath("/events");
+  revalidatePath("/admin/events");
   return { ok: true };
 }
 

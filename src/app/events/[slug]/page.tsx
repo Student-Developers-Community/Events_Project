@@ -24,7 +24,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
 
   const { event, tiers } = data;
   const minPrice = tiers.length === 0 ? null : Math.min(...tiers.map((t) => t.price_paise));
+  const ended = new Date(event.ends_at).getTime() < Date.now();
   const anyAvailable = tiers.some((t) => !t.is_sold_out);
+  const canRegister = anyAvailable && !ended;
 
   return (
     <>
@@ -162,20 +164,22 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
               )}
 
               <Link
-                href={anyAvailable ? `/events/${event.slug}/register` : "#"}
-                className={anyAvailable ? "btn-grad w-full text-center" : "btn-outline w-full text-center"}
+                href={canRegister ? `/events/${event.slug}/register` : "#"}
+                className={canRegister ? "btn-grad w-full text-center" : "btn-outline w-full text-center"}
                 style={{
                   padding: ".85rem 1.4rem",
                   fontSize: "14.5px",
-                  pointerEvents: anyAvailable ? "auto" : "none",
-                  opacity: anyAvailable ? 1 : 0.5,
+                  pointerEvents: canRegister ? "auto" : "none",
+                  opacity: canRegister ? 1 : 0.5,
                 }}
               >
-                {anyAvailable ? "Register now →" : "Sold out"}
+                {ended ? "Event ended" : anyAvailable ? "Register now →" : "Sold out"}
               </Link>
 
               <p className="text-[11px] mt-3 text-center" style={{ color: "var(--dim)" }}>
-                Secure checkout via Razorpay · UPI, cards, netbanking
+                {ended
+                  ? "Registration is closed — this event has already taken place."
+                  : "Free & paid tickets · instant QR ticket by email"}
               </p>
             </div>
           </aside>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { createEventAction, updateEventAction, type ActionResult } from "@/lib/events/actions";
+import { Sparkles } from "lucide-react";
+import { createEventAction, updateEventAction, generateDescriptionAction, type ActionResult } from "@/lib/events/actions";
 import type { EventQuestion, QuestionType } from "@/lib/db/types";
 import ImageUpload from "./ImageUpload";
 
@@ -76,15 +77,48 @@ export default function EventCreateForm({
   mode = "create",
   eventId,
   defaults = {},
+  submitAction,
 }: {
   mode?: "create" | "edit";
   eventId?: string;
   defaults?: EventFormDefaults;
+  /** Override the server action (e.g. super-admin editing any event). */
+  submitAction?: (state: ActionResult | undefined, formData: FormData) => Promise<ActionResult>;
 }) {
-  const action = mode === "edit" ? updateEventAction : createEventAction;
+  const action = submitAction ?? (mode === "edit" ? updateEventAction : createEventAction);
   const [state, formAction] = useActionState<ActionResult | undefined, FormData>(action, undefined);
   const [isOnline, setIsOnline] = useState(defaults.is_online ?? false);
   const [questions, setQuestions] = useState<EventQuestion[]>(defaults.questions ?? []);
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const [description, setDescription] = useState(defaults.description ?? "");
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function generateDescription() {
+    setAiError(null);
+    const fd = formRef.current ? new FormData(formRef.current) : null;
+    const title = String(fd?.get("title") ?? "").trim();
+    if (title.length < 3) { setAiError("Add an event title first."); return; }
+    setAiBusy(true);
+    try {
+      const res = await generateDescriptionAction({
+        title,
+        category: String(fd?.get("category") ?? ""),
+        subtitle: String(fd?.get("subtitle") ?? ""),
+        venue: String(fd?.get("venue_name") ?? ""),
+        city: String(fd?.get("city") ?? ""),
+        isOnline: fd?.get("is_online") === "on",
+        startsAt: String(fd?.get("starts_at") ?? ""),
+      });
+      if (res.ok) setDescription(res.text);
+      else setAiError(res.error);
+    } catch {
+      setAiError("Generation failed. Try again.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   const addQuestion = () =>
     setQuestions((qs) =>
@@ -96,7 +130,7 @@ export default function EventCreateForm({
     setQuestions((qs) => qs.filter((q) => q.id !== id));
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-5">
       {mode === "edit" && eventId && <input type="hidden" name="event_id" value={eventId} />}
       {/* Custom questions serialised as JSON — parsed server-side. Empty labels dropped. */}
       <input
@@ -113,9 +147,37 @@ export default function EventCreateForm({
         <input name="subtitle" defaultValue={defaults.subtitle ?? ""} placeholder="What's the hook?" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
       </Field>
 
-      <Field label="Description">
-        <textarea name="description" rows={5} defaultValue={defaults.description ?? ""} placeholder="What's the schedule, who is it for, what to expect..." className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none resize-vertical" style={fieldStyle} />
-      </Field>
+      <label className="flex flex-col gap-1.5">
+        <span className="flex items-center justify-between gap-2">
+          <span className="text-[13px] font-medium" style={{ color: "var(--muted)" }}>Description</span>
+          <button
+            type="button"
+            onClick={generateDescription}
+            disabled={aiBusy}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-semibold"
+            style={{
+              background: "rgba(124,92,255,.12)",
+              border: "1px solid rgba(124,92,255,.3)",
+              color: "var(--accent-3)",
+              cursor: aiBusy ? "wait" : "pointer",
+              opacity: aiBusy ? 0.7 : 1,
+            }}
+          >
+            <Sparkles size={13} strokeWidth={2.2} />
+            {aiBusy ? "Generating…" : "Generate with AI"}
+          </button>
+        </span>
+        <textarea
+          name="description"
+          rows={6}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What's the schedule, who is it for, what to expect… or click ✨ Generate with AI"
+          className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none resize-vertical"
+          style={fieldStyle}
+        />
+        {aiError && <span className="text-[12px]" style={{ color: "#fca5a5" }}>{aiError}</span>}
+      </label>
 
       <Field label="Cover image (optional)">
         <ImageUpload defaultUrl={defaults.cover_image_url ?? ""} />

@@ -3,9 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import TierAddForm from "@/components/dashboard/TierAddForm";
 import PublishToggle from "@/components/dashboard/PublishToggle";
+import GuestList from "@/components/dashboard/GuestList";
 import { getCurrentOrganiser } from "@/lib/auth/session";
 import { getMyEventById } from "@/lib/db/organiser-events";
+import { listEventInvitations } from "@/lib/db/invitations";
 import { formatEventDate, formatINR } from "@/lib/format";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +32,12 @@ export default async function EventOverviewPage({
   const data = await getMyEventById(id);
   if (!data) notFound();
 
+  const invitations = await listEventInvitations(id);
+
   const { event, tiers, attendee_count } = data;
   const s = STATUS_STYLE[event.status];
   const isPublished = event.status === "published";
+  const ended = new Date(event.ends_at).getTime() < Date.now();
 
   // Approval banner state
   const approval = event.approval_status; // 'pending' | 'approved' | 'rejected'
@@ -68,6 +75,17 @@ export default async function EventOverviewPage({
             {event.total_capacity && (<><span>·</span><span>👥 {event.total_capacity} max</span></>)}
           </div>
         </header>
+
+        {/* Ended banner */}
+        {ended && (
+          <div className="card-base p-4 mb-5" style={{ background: "rgba(124,92,255,.06)", borderColor: "rgba(124,92,255,.25)" }}>
+            <p className="text-[13px] font-semibold mb-0.5" style={{ color: "var(--accent-3)" }}>📅 This event has ended</p>
+            <p className="text-[12.5px]" style={{ color: "var(--muted)" }}>
+              It&apos;s a past event — registration is closed and it no longer appears on Discover. To run it again,
+              <Link href={`/dashboard/events/${event.id}/edit`} style={{ color: "var(--accent-2)" }}> edit the date</Link> to a future one; it&apos;ll go back for approval, then re-open for registration.
+            </p>
+          </div>
+        )}
 
         {/* Approval banner */}
         {isPublished && approval === "pending" && (
@@ -173,6 +191,9 @@ export default async function EventOverviewPage({
             <TierAddForm eventId={event.id} />
           </div>
         </section>
+
+        {/* Guest invitations */}
+        <GuestList eventId={event.id} invitations={invitations} appUrl={APP_URL} />
       </main>
     </>
   );
