@@ -86,7 +86,7 @@ export default async function PricingPage() {
               className="card-base p-7 flex flex-col"
               style={
                 t.highlight
-                  ? { border: "1px solid var(--accent)", boxShadow: "0 0 40px rgba(0,255,157,.08)" }
+                  ? { border: "1px solid var(--accent)", boxShadow: "0 0 40px rgba(124, 92, 255,.08)" }
                   : undefined
               }
             >

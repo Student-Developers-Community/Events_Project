@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { confirmWithoutPaymentAction } from "@/lib/registrations/actions";
 import { formatINR, formatEventDate } from "@/lib/format";
 
@@ -26,12 +26,11 @@ export default async function PendingPage({
   const { qr } = await searchParams;
   if (!qr) notFound();
 
-  const sb = await getSupabaseServerClient();
+  // qr_token is the bearer credential → service role (RLS hides a guest's
+  // pending reg by token).
+  const sb = getSupabaseServiceClient();
   if (!sb) notFound();
 
-  // Read the pending registration. Since RLS doesn't expose pending regs to
-  // anon users by default, we rely on the user just having submitted it
-  // (same-session cookie). For guest checkout we'll switch to service_role.
   const { data: reg } = await sb
     .from("registrations")
     .select("id, status, attendee_name, attendee_email, amount_paise, event_id")

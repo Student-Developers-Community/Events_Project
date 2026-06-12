@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { EventStatus, EventCategory } from "./types";
+import type { EventStatus, EventCategory, EventQuestion } from "./types";
 
 export type OrganiserEventRow = {
   id: string;
@@ -22,6 +22,7 @@ export type OrganiserEventRow = {
   online_url: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  questions: EventQuestion[];
 };
 
 export type OrganiserTierRow = {
@@ -45,7 +46,7 @@ export async function listMyEvents(): Promise<OrganiserEventRow[]> {
 
   const { data, error } = await sb
     .from("events")
-    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone")
+    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone, questions")
     .eq("organiser_id", user.id)
     .is("deleted_at", null)
     .order("starts_at", { ascending: false });
@@ -70,7 +71,7 @@ export async function getMyEventById(id: string): Promise<{
 
   const { data: event } = await sb
     .from("events")
-    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone")
+    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone, questions")
     .eq("id", id)
     .eq("organiser_id", user.id)
     .is("deleted_at", null)

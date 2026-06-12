@@ -1,6 +1,8 @@
 import "server-only";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
+export type AttendeeAnswer = { id: string; label: string; type?: string; value: string };
+
 export type AttendeeRow = {
   id: string;
   attendee_name: string;
@@ -12,6 +14,7 @@ export type AttendeeRow = {
   confirmed_at: string | null;
   checked_in_at: string | null;
   ticket_tiers: { name: string } | null;
+  answers: AttendeeAnswer[];
 };
 
 export type ListAttendeesOpts = {
@@ -47,7 +50,7 @@ export async function listEventAttendees(
     .from("registrations")
     .select(`
       id, attendee_name, attendee_email, attendee_phone, status,
-      amount_paise, created_at, confirmed_at, checked_in_at,
+      amount_paise, created_at, confirmed_at, checked_in_at, metadata,
       ticket_tiers ( name )
     `)
     .eq("event_id", eventId)
@@ -71,8 +74,10 @@ export async function listEventAttendees(
   return ((data ?? []) as unknown[]).map((row) => {
     const r = row as AttendeeRow & {
       ticket_tiers: AttendeeRow["ticket_tiers"] | AttendeeRow["ticket_tiers"][];
+      metadata?: { answers?: AttendeeAnswer[] } | null;
     };
     const tier = Array.isArray(r.ticket_tiers) ? r.ticket_tiers[0] ?? null : r.ticket_tiers;
-    return { ...r, ticket_tiers: tier } as AttendeeRow;
+    const answers = Array.isArray(r.metadata?.answers) ? r.metadata!.answers : [];
+    return { ...r, ticket_tiers: tier, answers } as AttendeeRow;
   });
 }

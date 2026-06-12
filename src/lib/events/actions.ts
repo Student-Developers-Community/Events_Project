@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { eventCreateSchema, tierCreateSchema } from "./schemas";
+import { eventCreateSchema, tierCreateSchema, parseQuestionsField } from "./schemas";
 import { slugify, withRandomSuffix } from "./slug";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -33,6 +33,7 @@ export async function createEventAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const v = parsed.data;
+  const questions = parseQuestionsField(formData.get("questions"));
 
   const sb = await getSupabaseServerClient();
   if (!sb) return { ok: false, error: "Supabase is not configured" };
@@ -67,6 +68,7 @@ export async function createEventAction(
         cover_image_url: v.cover_image_url || null,
         contact_email: v.contact_email || null,
         contact_phone: v.contact_phone || null,
+        questions,
         created_by: user.id,
         updated_by: user.id,
       })
@@ -118,6 +120,7 @@ export async function updateEventAction(
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   const v = parsed.data;
+  const questions = parseQuestionsField(formData.get("questions"));
 
   const sb = await getSupabaseServerClient();
   if (!sb) return { ok: false, error: "Supabase is not configured" };
@@ -141,6 +144,7 @@ export async function updateEventAction(
       cover_image_url: v.cover_image_url || null,
       contact_email: v.contact_email || null,
       contact_phone: v.contact_phone || null,
+      questions,
       updated_by: user.id,
     })
     .eq("id", eventId)

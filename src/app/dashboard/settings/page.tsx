@@ -45,7 +45,7 @@ export default async function SettingsPage() {
             {organiser.is_verified && (
               <span
                 className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase"
-                style={{ background: "rgba(0,255,157,.15)", color: "var(--accent)" }}
+                style={{ background: "rgba(124, 92, 255,.15)", color: "var(--accent)" }}
               >
                 ✓ Verified organiser
               </span>

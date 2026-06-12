@@ -10,14 +10,14 @@ export const dynamic = "force-dynamic";
 
 const HOSTING_STATUS: Record<string, { bg: string; color: string; label: string }> = {
   draft:     { bg: "rgba(255,255,255,.06)", color: "var(--muted)",   label: "DRAFT" },
-  published: { bg: "rgba(0,255,157,.15)",   color: "var(--accent)",  label: "PUBLISHED" },
+  published: { bg: "rgba(124, 92, 255,.15)",   color: "var(--accent)",  label: "PUBLISHED" },
   cancelled: { bg: "rgba(239,68,68,.12)",   color: "#fca5a5",        label: "CANCELLED" },
   completed: { bg: "rgba(0,212,255,.12)",   color: "var(--accent-2)", label: "COMPLETED" },
 };
 
 const TICKET_STATUS: Record<string, { bg: string; color: string; label: string }> = {
   pending:    { bg: "rgba(255,255,255,.06)", color: "var(--muted)",   label: "PENDING" },
-  confirmed:  { bg: "rgba(0,255,157,.15)",   color: "var(--accent)",  label: "CONFIRMED" },
+  confirmed:  { bg: "rgba(124, 92, 255,.15)",   color: "var(--accent)",  label: "CONFIRMED" },
   checked_in: { bg: "rgba(0,212,255,.15)",   color: "var(--accent-2)", label: "CHECKED IN" },
   cancelled:  { bg: "rgba(239,68,68,.12)",   color: "#fca5a5",        label: "CANCELLED" },
 };
@@ -89,7 +89,7 @@ export default async function DashboardPage() {
                     <div
                       className="w-12 h-12 rounded-md flex items-center justify-center text-xl shrink-0"
                       style={{
-                        background: "linear-gradient(135deg, rgba(0,255,157,.15), rgba(0,212,255,.15))",
+                        background: "linear-gradient(135deg, rgba(124, 92, 255,.15), rgba(0,212,255,.15))",
                         border: "1px solid var(--border)",
                       }}
                     >
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
                     <div
                       className="w-12 h-12 rounded-md flex items-center justify-center text-xl shrink-0"
                       style={{
-                        background: "linear-gradient(135deg, rgba(0,212,255,.15), rgba(0,255,157,.15))",
+                        background: "linear-gradient(135deg, rgba(0,212,255,.15), rgba(124, 92, 255,.15))",
                         border: "1px solid var(--border)",
                       }}
                     >

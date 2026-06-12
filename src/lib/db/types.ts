@@ -13,6 +13,16 @@ export type EventCategory =
 
 export type EventStatus = "draft" | "published" | "cancelled" | "completed";
 
+/** A custom question an organiser asks attendees at registration time. */
+export type QuestionType = "text" | "textarea" | "url" | "email" | "phone";
+
+export type EventQuestion = {
+  id: string;          // stable key, e.g. "q1" — used as the answer key
+  label: string;       // shown to the attendee
+  type: QuestionType;
+  required: boolean;
+};
+
 export type PublicEvent = {
   id: string;
   slug: string;
@@ -30,6 +40,7 @@ export type PublicEvent = {
   total_capacity: number | null;
   contact_email: string | null;
   contact_phone: string | null;
+  questions: EventQuestion[];
   organiser_id: string;
   organiser_name: string;
   organiser_avatar: string | null;

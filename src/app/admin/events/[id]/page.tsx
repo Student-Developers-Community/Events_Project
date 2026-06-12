@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS_PILL: Record<string, { bg: string; color: string }> = {
   pending:    { bg: "rgba(255,255,255,.06)", color: "var(--muted)" },
-  confirmed:  { bg: "rgba(0,255,157,.15)",   color: "var(--accent)" },
+  confirmed:  { bg: "rgba(124, 92, 255,.15)",   color: "var(--accent)" },
   checked_in: { bg: "rgba(0,212,255,.15)",   color: "var(--accent-2)" },
   cancelled:  { bg: "rgba(239,68,68,.12)",   color: "#fca5a5" },
 };
@@ -34,7 +34,7 @@ export default async function AdminEventDetail({ params }: { params: Promise<{ i
       <header className="mb-6">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase"
-            style={{ background: event.approval_status === "approved" ? "rgba(0,255,157,.15)" : event.approval_status === "rejected" ? "rgba(239,68,68,.12)" : "rgba(251,191,36,.15)",
+            style={{ background: event.approval_status === "approved" ? "rgba(124, 92, 255,.15)" : event.approval_status === "rejected" ? "rgba(239,68,68,.12)" : "rgba(251,191,36,.15)",
                      color: event.approval_status === "approved" ? "var(--accent)" : event.approval_status === "rejected" ? "#fca5a5" : "#fbbf24" }}>
             {event.approval_status}
           </span>

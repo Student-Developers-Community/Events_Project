@@ -44,10 +44,10 @@ export async function GET(
 <style>
   body{margin:0;background:#000;color:#fff;font-family:Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
   .card{background:#0a0a14;border:1px solid #1a1a2a;border-radius:14px;padding:28px;max-width:380px;width:100%;text-align:center;}
-  .pill{display:inline-block;background:rgba(0,255,157,0.15);color:#80ffd1;border:1px solid rgba(0,255,157,0.3);padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
+  .pill{display:inline-block;background:rgba(124, 92, 255,0.15);color:#b9a7ff;border:1px solid rgba(124, 92, 255,0.3);padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:18px;}
   h1{margin:0 0 8px 0;font-size:22px;letter-spacing:-0.02em;}
   p{margin:0 0 18px 0;font-size:14px;color:#6a6a80;line-height:1.5;}
-  a.btn{display:inline-block;background:linear-gradient(135deg,#00ff9d,#00d4ff);color:#001a10;text-decoration:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:8px;}
+  a.btn{display:inline-block;background:linear-gradient(135deg,#7c5cff,#00d4ff);color:#001a10;text-decoration:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:8px;}
   .muted{font-size:12px;color:#404056;margin-top:18px;}
 </style></head>
 <body><div class="card">

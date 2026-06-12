@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createEventAction, updateEventAction, type ActionResult } from "@/lib/events/actions";
+import type { EventQuestion, QuestionType } from "@/lib/db/types";
 import ImageUpload from "./ImageUpload";
 
 const CATEGORIES = [
@@ -36,7 +37,23 @@ export type EventFormDefaults = {
   cover_image_url?: string | null;
   contact_email?: string | null;
   contact_phone?: string | null;
+  questions?: EventQuestion[] | null;
 };
+
+const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
+  { value: "text",     label: "Short text" },
+  { value: "textarea", label: "Long text" },
+  { value: "url",      label: "URL (e.g. LinkedIn)" },
+  { value: "email",    label: "Email" },
+  { value: "phone",    label: "Phone" },
+];
+
+function newQuestionId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `q_${crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `q_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /** ISO → "YYYY-MM-DDTHH:mm" in local time, for datetime-local prefill. */
 function toLocalInput(iso?: string | null): string {
@@ -67,10 +84,26 @@ export default function EventCreateForm({
   const action = mode === "edit" ? updateEventAction : createEventAction;
   const [state, formAction] = useActionState<ActionResult | undefined, FormData>(action, undefined);
   const [isOnline, setIsOnline] = useState(defaults.is_online ?? false);
+  const [questions, setQuestions] = useState<EventQuestion[]>(defaults.questions ?? []);
+
+  const addQuestion = () =>
+    setQuestions((qs) =>
+      qs.length >= 15 ? qs : [...qs, { id: newQuestionId(), label: "", type: "text", required: false }],
+    );
+  const updateQuestion = (id: string, patch: Partial<EventQuestion>) =>
+    setQuestions((qs) => qs.map((q) => (q.id === id ? { ...q, ...patch } : q)));
+  const removeQuestion = (id: string) =>
+    setQuestions((qs) => qs.filter((q) => q.id !== id));
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
       {mode === "edit" && eventId && <input type="hidden" name="event_id" value={eventId} />}
+      {/* Custom questions serialised as JSON — parsed server-side. Empty labels dropped. */}
+      <input
+        type="hidden"
+        name="questions"
+        value={JSON.stringify(questions.filter((q) => q.label.trim() !== ""))}
+      />
 
       <Field label="Event title *">
         <input name="title" required defaultValue={defaults.title ?? ""} placeholder="e.g. Hack for Hyderabad" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
@@ -142,6 +175,67 @@ export default function EventCreateForm({
             <input name="contact_phone" defaultValue={defaults.contact_phone ?? ""} placeholder="9876543210" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
           </Field>
         </div>
+      </div>
+
+      {/* Custom questions for attendees */}
+      <div className="pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+        <p className="text-[13px] font-semibold mb-1 mt-3" style={{ color: "var(--text)" }}>Questions for attendees</p>
+        <p className="text-[12px] mb-3" style={{ color: "var(--dim)" }}>
+          Ask for extra info at registration — LinkedIn URL, GitHub, T-shirt size, etc. Name, email and phone are always collected.
+        </p>
+
+        {questions.length > 0 && (
+          <div className="flex flex-col gap-3 mb-3">
+            {questions.map((q, i) => (
+              <div key={q.id} className="rounded-md p-3" style={{ background: "var(--bg-2)", border: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[11px] font-semibold" style={{ color: "var(--dim)" }}>Q{i + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeQuestion(q.id)}
+                    className="ml-auto text-[12px]"
+                    style={{ color: "#fca5a5" }}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <input
+                  value={q.label}
+                  onChange={(e) => updateQuestion(q.id, { label: e.target.value })}
+                  maxLength={120}
+                  placeholder="Question label (e.g. LinkedIn URL)"
+                  className="w-full px-3 py-2 rounded-md text-sm outline-none mb-2"
+                  style={fieldStyle}
+                />
+                <div className="flex items-center gap-3 flex-wrap">
+                  <select
+                    value={q.type}
+                    onChange={(e) => updateQuestion(q.id, { type: e.target.value as QuestionType })}
+                    className="px-3 py-2 rounded-md text-[13px] outline-none"
+                    style={fieldStyle}
+                  >
+                    {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                  <label className="flex items-center gap-2 cursor-pointer text-[13px]" style={{ color: "var(--muted)" }}>
+                    <input
+                      type="checkbox"
+                      checked={q.required}
+                      onChange={(e) => updateQuestion(q.id, { required: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    Required
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {questions.length < 15 && (
+          <button type="button" onClick={addQuestion} className="btn-outline" style={{ padding: ".5rem 1rem", fontSize: "13px" }}>
+            + Add question
+          </button>
+        )}
       </div>
 
       {state && !state.ok && (

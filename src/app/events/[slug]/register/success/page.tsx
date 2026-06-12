@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { generateQRDataUrl } from "@/lib/qr";
 import { formatEventDate } from "@/lib/format";
 
@@ -20,7 +20,8 @@ export default async function RegisterSuccessPage({
   const { qr, err } = await searchParams;
   if (!qr) notFound();
 
-  const sb = await getSupabaseServerClient();
+  // qr_token is the bearer credential → service role (RLS hides a guest's own reg).
+  const sb = getSupabaseServiceClient();
   if (!sb) notFound();
 
   // Join registration to event
@@ -55,8 +56,8 @@ export default async function RegisterSuccessPage({
             <div
               className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-medium"
               style={{
-                background: "rgba(0,255,157,.12)",
-                border: "1px solid rgba(0,255,157,.3)",
+                background: "rgba(124, 92, 255,.12)",
+                border: "1px solid rgba(124, 92, 255,.3)",
                 color: "var(--accent-3)",
               }}
             >
@@ -84,7 +85,7 @@ export default async function RegisterSuccessPage({
             style={{
               background: "#000",
               border: "1px solid var(--border)",
-              boxShadow: "0 0 32px rgba(0,255,157,.08)",
+              boxShadow: "0 0 32px rgba(124, 92, 255,.08)",
             }}
           >
             <Image

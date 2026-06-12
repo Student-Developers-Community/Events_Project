@@ -51,6 +51,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ slug:
             <RegistrationForm
               eventId={event.id}
               eventSlug={slug}
+              questions={event.questions ?? []}
               tiers={tiers.map((t) => ({
                 id: t.id,
                 name: t.name,

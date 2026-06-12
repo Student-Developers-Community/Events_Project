@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { registerAttendeeAction, type ActionResult } from "@/lib/registrations/actions";
+import type { EventQuestion } from "@/lib/db/types";
 import { formatINR } from "@/lib/format";
 
 type Tier = {
@@ -18,6 +19,15 @@ type Props = {
   eventId: string;
   eventSlug: string;
   tiers: Tier[];
+  questions: EventQuestion[];
+};
+
+const INPUT_TYPE: Record<EventQuestion["type"], string> = {
+  text: "text",
+  textarea: "text", // rendered as <textarea> below
+  url: "url",
+  email: "email",
+  phone: "tel",
 };
 
 const fieldStyle = {
@@ -27,7 +37,7 @@ const fieldStyle = {
   fontFamily: "var(--font)",
 };
 
-function Submit({ priceLabel }: { priceLabel: string }) {
+function Submit({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -36,12 +46,12 @@ function Submit({ priceLabel }: { priceLabel: string }) {
       className="btn-grad w-full"
       style={{ padding: ".95rem", fontSize: "15px", opacity: pending ? 0.6 : 1 }}
     >
-      {pending ? "Reserving…" : `Continue · ${priceLabel}`}
+      {pending ? "Reserving…" : label}
     </button>
   );
 }
 
-export default function RegistrationForm({ eventId, eventSlug, tiers }: Props) {
+export default function RegistrationForm({ eventId, eventSlug, tiers, questions }: Props) {
   const router = useRouter();
   const available = tiers.filter((t) => !t.is_sold_out);
   const [selectedTierId, setSelectedTierId] = useState<string>(available[0]?.id ?? "");
@@ -50,7 +60,12 @@ export default function RegistrationForm({ eventId, eventSlug, tiers }: Props) {
     async (prev, fd) => {
       const result = await registerAttendeeAction(prev, fd);
       if (result.ok) {
-        router.push(`/events/${eventSlug}/register/pending?qr=${encodeURIComponent(result.qr_token)}`);
+        // Free tickets are confirmed immediately (no payment) → straight to the
+        // ticket. Paid tickets go to the pending/payment step.
+        const next = result.free
+          ? `/events/${eventSlug}/register/success?qr=${encodeURIComponent(result.qr_token)}`
+          : `/events/${eventSlug}/register/pending?qr=${encodeURIComponent(result.qr_token)}`;
+        router.push(next);
       }
       return result;
     },
@@ -59,6 +74,8 @@ export default function RegistrationForm({ eventId, eventSlug, tiers }: Props) {
 
   const selectedTier = tiers.find((t) => t.id === selectedTierId);
   const priceLabel = selectedTier ? formatINR(selectedTier.price_paise) : "—";
+  const isFree = selectedTier?.price_paise === 0;
+  const ctaLabel = isFree ? "Get free ticket" : `Continue · ${priceLabel}`;
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
@@ -80,7 +97,7 @@ export default function RegistrationForm({ eventId, eventSlug, tiers }: Props) {
                 onClick={() => !disabled && setSelectedTierId(t.id)}
                 className="text-left flex items-center gap-3 p-3 rounded-md transition-colors"
                 style={{
-                  background: active ? "rgba(0,255,157,.08)" : "var(--bg-2)",
+                  background: active ? "rgba(124, 92, 255,.08)" : "var(--bg-2)",
                   border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
                   opacity: disabled ? 0.5 : 1,
                   cursor: disabled ? "not-allowed" : "pointer",
@@ -122,6 +139,32 @@ export default function RegistrationForm({ eventId, eventSlug, tiers }: Props) {
         <input name="attendee_phone" required placeholder="9876543210" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
       </Field>
 
+      {/* Organiser's custom questions. Field name = q_<id>, read server-side. */}
+      {questions.map((q) => (
+        <Field key={q.id} label={`${q.label}${q.required ? " *" : ""}`}>
+          {q.type === "textarea" ? (
+            <textarea
+              name={`q_${q.id}`}
+              required={q.required}
+              rows={3}
+              maxLength={2000}
+              className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none resize-vertical"
+              style={fieldStyle}
+            />
+          ) : (
+            <input
+              name={`q_${q.id}`}
+              type={INPUT_TYPE[q.type]}
+              required={q.required}
+              maxLength={500}
+              placeholder={q.type === "url" ? "https://…" : ""}
+              className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none"
+              style={fieldStyle}
+            />
+          )}
+        </Field>
+      ))}
+
       {state && !state.ok && (
         <div
           className="px-3 py-2 rounded-md text-[13px]"
@@ -131,7 +174,7 @@ export default function RegistrationForm({ eventId, eventSlug, tiers }: Props) {
         </div>
       )}
 
-      <Submit priceLabel={priceLabel} />
+      <Submit label={ctaLabel} />
 
       <p className="text-[11px] text-center" style={{ color: "var(--dim)" }}>
         By continuing, you agree to share your contact details with the event organiser.

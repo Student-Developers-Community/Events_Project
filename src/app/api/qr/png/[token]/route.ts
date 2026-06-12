@@ -26,7 +26,7 @@ export async function GET(
     margin: 1,
     errorCorrectionLevel: "H",
     color: {
-      dark: "#00ff9d",
+      dark: "#7c5cff",
       light: "#000000",
     },
   });

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { EventQuestion } from "@/lib/db/types";
 
 export const eventCategoryEnum = z.enum([
   "hackathon", "workshop", "conference", "meetup", "demo_day", "other",
@@ -28,6 +29,32 @@ export const eventCreateSchema = z.object({
   (v) => v.is_online ? !!v.online_url : (!!v.venue_name || !!v.city),
   { message: "Provide venue/city for in-person events, or an online URL", path: ["venue_name"] }
 );
+
+export const questionTypeEnum = z.enum(["text", "textarea", "url", "email", "phone"]);
+
+/** A single custom registration question. */
+export const eventQuestionSchema = z.object({
+  id:       z.string().trim().min(1).max(40),
+  label:    z.string().trim().min(1, "Question label required").max(120),
+  type:     questionTypeEnum,
+  required: z.coerce.boolean().default(false),
+});
+
+/** The full ordered list. Capped so the form stays sane. */
+export const eventQuestionsSchema = z.array(eventQuestionSchema).max(15, "Up to 15 questions allowed");
+
+/** Parse the JSON string the form submits in the hidden `questions` field. */
+export function parseQuestionsField(raw: FormDataEntryValue | null): EventQuestion[] {
+  if (!raw || typeof raw !== "string" || raw.trim() === "") return [];
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const result = eventQuestionsSchema.safeParse(json);
+  return result.success ? (result.data as EventQuestion[]) : [];
+}
 
 export const tierCreateSchema = z.object({
   event_id:     z.string().uuid(),

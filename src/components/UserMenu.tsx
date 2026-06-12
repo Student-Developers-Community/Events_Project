@@ -49,7 +49,7 @@ export default function UserMenu({ name, email, isSuperAdmin = false }: { name: 
           </div>
           <Link
             href="/dashboard"
-            className="block px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(0,255,157,.06)]"
+            className="block px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(124, 92, 255,.06)]"
             style={{ color: "var(--text)" }}
             onClick={() => setOpen(false)}
           >
@@ -57,7 +57,7 @@ export default function UserMenu({ name, email, isSuperAdmin = false }: { name: 
           </Link>
           <Link
             href="/dashboard/settings"
-            className="block px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(0,255,157,.06)]"
+            className="block px-4 py-2.5 text-[13px] transition-colors hover:bg-[rgba(124, 92, 255,.06)]"
             style={{ color: "var(--text)" }}
             onClick={() => setOpen(false)}
           >

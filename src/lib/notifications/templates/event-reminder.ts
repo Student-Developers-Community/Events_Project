@@ -38,12 +38,12 @@ export function renderEventReminder(d: ReminderTemplateData): Rendered {
   <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:560px;margin:0 auto;">
     <tr><td style="padding:0 24px 16px 24px;">
       <table role="presentation"><tr>
-        <td style="background:linear-gradient(135deg,#00ff9d,#00d4ff);color:#001a10;font-weight:900;font-size:12px;padding:6px 10px;border-radius:6px;">TE</td>
+        <td style="background:linear-gradient(135deg,#7c5cff,#00d4ff);color:#001a10;font-weight:900;font-size:12px;padding:6px 10px;border-radius:6px;">TE</td>
         <td style="padding-left:10px;color:#fff;font-weight:bold;font-size:15px;">TechEvent</td>
       </tr></table>
     </td></tr>
     <tr><td style="padding:0 24px 8px 24px;">
-      <span style="display:inline-block;background:rgba(0,212,255,0.15);color:#80ffd1;border:1px solid rgba(0,212,255,0.3);padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">⏰ ${lead}</span>
+      <span style="display:inline-block;background:rgba(0,212,255,0.15);color:#b9a7ff;border:1px solid rgba(0,212,255,0.3);padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">⏰ ${lead}</span>
     </td></tr>
     <tr><td style="padding:0 24px 8px 24px;">
       <h1 style="margin:0;font-size:24px;line-height:1.15;letter-spacing:-0.02em;color:#fff;">${esc(d.event_title)}</h1>
@@ -61,7 +61,7 @@ export function renderEventReminder(d: ReminderTemplateData): Rendered {
       </table>
     </td></tr>
     <tr><td style="padding:0 24px 28px 24px;">
-      <a href="${ticketUrl}" style="display:inline-block;background:linear-gradient(135deg,#00ff9d,#00d4ff);color:#001a10;text-decoration:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:8px;">View ticket →</a>
+      <a href="${ticketUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c5cff,#00d4ff);color:#001a10;text-decoration:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:8px;">View ticket →</a>
     </td></tr>
     <tr><td style="padding:0 24px 32px 24px;font-size:12px;color:#6a6a80;">See you there! · TechEvent</td></tr>
   </table>

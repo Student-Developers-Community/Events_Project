@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { generateICS } from "@/lib/calendar";
 
 /**
@@ -15,7 +15,9 @@ export async function GET(
     return new NextResponse("Invalid token", { status: 400 });
   }
 
-  const sb = await getSupabaseServerClient();
+  // qr_token is the bearer credential → read via service role (RLS won't expose
+  // a guest's own registration by token).
+  const sb = getSupabaseServiceClient();
   if (!sb) return new NextResponse("Server not configured", { status: 500 });
 
   const { data: reg } = await sb

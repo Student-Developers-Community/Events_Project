@@ -90,8 +90,8 @@ export default async function HomePage() {
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-xl mb-3.5"
                   style={{
-                    background: "rgba(0,255,157,.12)",
-                    border: "1px solid rgba(0,255,157,.25)",
+                    background: "rgba(124, 92, 255,.12)",
+                    border: "1px solid rgba(124, 92, 255,.25)",
                   }}
                 >
                   {f.icon}
@@ -111,8 +111,8 @@ export default async function HomePage() {
             className="rounded-2xl p-10 md:p-14 text-center"
             style={{
               background:
-                "linear-gradient(135deg, rgba(0,255,157,.08), rgba(0,212,255,.08))",
-              border: "1px solid rgba(0,255,157,.25)",
+                "linear-gradient(135deg, rgba(124, 92, 255,.08), rgba(0,212,255,.08))",
+              border: "1px solid rgba(124, 92, 255,.25)",
             }}
           >
             <p className="sec-label mb-2">// Be early</p>

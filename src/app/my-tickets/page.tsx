@@ -10,7 +10,7 @@ export const metadata = { title: "My tickets · TechEvent" };
 
 const STATUS: Record<string, { bg: string; color: string; label: string }> = {
   pending:     { bg: "rgba(255,255,255,.06)", color: "var(--muted)",   label: "PENDING PAYMENT" },
-  confirmed:   { bg: "rgba(0,255,157,.15)",   color: "var(--accent)",  label: "CONFIRMED" },
+  confirmed:   { bg: "rgba(124, 92, 255,.15)",   color: "var(--accent)",  label: "CONFIRMED" },
   checked_in:  { bg: "rgba(0,212,255,.15)",   color: "var(--accent-2)", label: "CHECKED IN" },
   cancelled:   { bg: "rgba(239,68,68,.12)",   color: "#fca5a5",        label: "CANCELLED" },
   refunded:    { bg: "rgba(255,255,255,.06)", color: "var(--muted)",   label: "REFUNDED" },
@@ -70,7 +70,7 @@ export default async function MyTicketsPage() {
                   <div
                     className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl shrink-0"
                     style={{
-                      background: "linear-gradient(135deg, rgba(0,255,157,.15), rgba(0,212,255,.15))",
+                      background: "linear-gradient(135deg, rgba(124, 92, 255,.15), rgba(0,212,255,.15))",
                       border: "1px solid var(--border)",
                     }}
                   >

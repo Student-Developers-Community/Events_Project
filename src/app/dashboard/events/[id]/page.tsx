@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; label: string }> = {
   draft:     { bg: "rgba(255,255,255,.06)", color: "var(--muted)",  label: "DRAFT" },
-  published: { bg: "rgba(0,255,157,.15)",   color: "var(--accent)", label: "PUBLISHED" },
+  published: { bg: "rgba(124, 92, 255,.15)",   color: "var(--accent)", label: "PUBLISHED" },
   cancelled: { bg: "rgba(239,68,68,.12)",   color: "#fca5a5",       label: "CANCELLED" },
   completed: { bg: "rgba(0,212,255,.12)",   color: "var(--accent-2)", label: "COMPLETED" },
 };
@@ -87,7 +87,7 @@ export default async function EventOverviewPage({
           </div>
         )}
         {isLive && (
-          <div className="card-base p-3 mb-5" style={{ background: "rgba(0,255,157,.05)", borderColor: "rgba(0,255,157,.2)" }}>
+          <div className="card-base p-3 mb-5" style={{ background: "rgba(124, 92, 255,.05)", borderColor: "rgba(124, 92, 255,.2)" }}>
             <p className="text-[12.5px]" style={{ color: "var(--accent-3)" }}>✓ Approved &amp; live — visible on Discover.</p>
           </div>
         )}
@@ -157,7 +157,7 @@ export default async function EventOverviewPage({
                   <div
                     className="font-bold text-[15px] px-3 py-1 rounded-full"
                     style={{
-                      background: t.price_paise === 0 ? "rgba(22,163,74,.15)" : "rgba(0,255,157,.1)",
+                      background: t.price_paise === 0 ? "rgba(22,163,74,.15)" : "rgba(124, 92, 255,.1)",
                       color: t.price_paise === 0 ? "#86efac" : "var(--accent)",
                     }}
                   >

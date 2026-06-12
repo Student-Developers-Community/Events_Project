@@ -36,7 +36,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
           style={{
             background: event.cover_image_url
               ? `linear-gradient(180deg, rgba(0,0,0,.6), rgba(0,0,0,.9)), url(${event.cover_image_url}) center/cover`
-              : "linear-gradient(180deg, rgba(0,255,157,.06) 0%, transparent 60%)",
+              : "linear-gradient(180deg, rgba(124, 92, 255,.06) 0%, transparent 60%)",
           }}
         >
           <div className="max-w-3xl mx-auto">
@@ -47,7 +47,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             <div className="flex items-center gap-3 mb-4">
               <span
                 className="px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase"
-                style={{ background: "rgba(0,255,157,.15)", color: "var(--accent)" }}
+                style={{ background: "rgba(124, 92, 255,.15)", color: "var(--accent)" }}
               >
                 {categoryIcon(event.category)} {event.category.replace("_", " ")}
               </span>

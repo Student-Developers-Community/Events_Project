@@ -39,12 +39,12 @@ export default async function OrganisersPage() {
         >
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ background: "radial-gradient(ellipse 55% 50% at 50% 0%, rgba(0,255,157,.14), transparent 70%)" }}
+            style={{ background: "radial-gradient(ellipse 55% 50% at 50% 0%, rgba(124, 92, 255,.14), transparent 70%)" }}
           />
           <div className="relative z-10 max-w-3xl mx-auto">
             <div
               className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-medium mb-6"
-              style={{ background: "rgba(0,255,157,.1)", border: "1px solid rgba(0,255,157,.3)", color: "var(--accent-3)" }}
+              style={{ background: "rgba(124, 92, 255,.1)", border: "1px solid rgba(124, 92, 255,.3)", color: "var(--accent-3)" }}
             >
               For organisers
             </div>
@@ -98,7 +98,7 @@ export default async function OrganisersPage() {
               <div key={f.title} className="card-base p-6">
                 <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center text-xl mb-3.5"
-                  style={{ background: "rgba(0,255,157,.12)", border: "1px solid rgba(0,255,157,.25)" }}
+                  style={{ background: "rgba(124, 92, 255,.12)", border: "1px solid rgba(124, 92, 255,.25)" }}
                 >
                   {f.icon}
                 </div>
@@ -113,7 +113,7 @@ export default async function OrganisersPage() {
         <section className="max-w-[1100px] mx-auto px-7 pb-24">
           <div
             className="rounded-2xl p-10 md:p-14 text-center"
-            style={{ background: "linear-gradient(135deg, rgba(0,255,157,.08), rgba(0,212,255,.08))", border: "1px solid rgba(0,255,157,.25)" }}
+            style={{ background: "linear-gradient(135deg, rgba(124, 92, 255,.08), rgba(0,212,255,.08))", border: "1px solid rgba(124, 92, 255,.25)" }}
           >
             <h2 className="font-extrabold mb-3" style={{ fontSize: "clamp(26px, 4vw, 38px)", letterSpacing: "-0.02em" }}>
               Ready to host your <span className="gtext">first event</span>?

@@ -26,12 +26,12 @@ export default function EventCard({ event }: { event: DemoEvent }) {
       <div
         className="h-40 relative"
         style={{
-          background: "linear-gradient(135deg, rgba(0,255,157,.18), rgba(0,212,255,.18) 70%)",
+          background: "linear-gradient(135deg, rgba(124, 92, 255,.18), rgba(0,212,255,.18) 70%)",
         }}
       >
         <div
           className="absolute inset-0"
-          style={{ background: "radial-gradient(circle at 70% 30%, rgba(0,255,157,.3), transparent 60%)" }}
+          style={{ background: "radial-gradient(circle at 70% 30%, rgba(124, 92, 255,.3), transparent 60%)" }}
         />
         <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-90">
           {event.icon}

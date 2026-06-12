@@ -18,7 +18,7 @@ const STATUS_FILTERS = [
 
 const STATUS_PILL: Record<string, { bg: string; color: string; label: string }> = {
   pending:    { bg: "rgba(255,255,255,.06)", color: "var(--muted)",    label: "PENDING" },
-  confirmed:  { bg: "rgba(0,255,157,.15)",   color: "var(--accent)",   label: "CONFIRMED" },
+  confirmed:  { bg: "rgba(124, 92, 255,.15)",   color: "var(--accent)",   label: "CONFIRMED" },
   checked_in: { bg: "rgba(0,212,255,.15)",   color: "var(--accent-2)", label: "CHECKED IN" },
   cancelled:  { bg: "rgba(239,68,68,.12)",   color: "#fca5a5",         label: "CANCELLED" },
   refunded:   { bg: "rgba(255,255,255,.06)", color: "var(--muted)",    label: "REFUNDED" },
@@ -173,6 +173,22 @@ function Row({ row, alt }: { row: AttendeeRow; alt: boolean }) {
         <div className="font-medium" style={{ color: "var(--text)" }}>
           {row.attendee_name}
         </div>
+        {row.answers.length > 0 && (
+          <div className="mt-1 flex flex-col gap-0.5">
+            {row.answers.map((a) => (
+              <div key={a.id} className="text-[11.5px]" style={{ color: "var(--dim)" }}>
+                <span style={{ color: "var(--muted)" }}>{a.label}:</span>{" "}
+                {a.type === "url" ? (
+                  <a href={a.value} target="_blank" rel="noreferrer" style={{ color: "var(--accent-3)", wordBreak: "break-all" }}>
+                    {a.value}
+                  </a>
+                ) : (
+                  <span style={{ wordBreak: "break-word" }}>{a.value}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </Td>
       <Td muted><span style={{ wordBreak: "break-all" }}>{row.attendee_email}</span></Td>
       <Td muted>{row.attendee_phone ?? "—"}</Td>

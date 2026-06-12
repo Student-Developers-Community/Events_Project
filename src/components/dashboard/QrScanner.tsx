@@ -227,13 +227,13 @@ function ResultCard({ result }: { result: CheckinResult }) {
 
 function resultBg(r: CheckinResult | null): string {
   if (!r) return "var(--card)";
-  if (r.ok) return "rgba(0,255,157,0.06)";
+  if (r.ok) return "rgba(124, 92, 255,0.06)";
   if (r.state === "already_in" || r.state === "not_confirmed" || r.state === "wrong_event") return "rgba(251,191,36,0.06)";
   return "rgba(239,68,68,0.06)";
 }
 function resultBorder(r: CheckinResult | null): string {
   if (!r) return "var(--border)";
-  if (r.ok) return "rgba(0,255,157,0.3)";
+  if (r.ok) return "rgba(124, 92, 255,0.3)";
   if (r.state === "already_in" || r.state === "not_confirmed" || r.state === "wrong_event") return "rgba(251,191,36,0.3)";
   return "rgba(239,68,68,0.3)";
 }

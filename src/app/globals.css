@@ -14,20 +14,20 @@
   --border-2:   #2a2a40;
 
   /* Accents — neon mint + cyan */
-  --accent:     #00ff9d;
+  --accent:     #7c5cff;
   --accent-2:   #00d4ff;
-  --accent-3:   #80ffd1;
-  --grad:       linear-gradient(135deg, #00ff9d 0%, #00d4ff 100%);
-  --ring:       rgba(0, 255, 157, .5);
+  --accent-3:   #b9a7ff;
+  --grad:       linear-gradient(135deg, #7c5cff 0%, #00d4ff 100%);
+  --ring:       rgba(124, 92, 255, .5);
   --ring-2:     rgba(0, 212, 255, .5);
 
   /* Text */
   --text:       #ffffff;
-  --muted:      #6a6a80;
-  --dim:        #404056;
+  --muted:      #9a9ab4;   /* brighter for readability on pure-black bg */
+  --dim:        #6a6a84;
 
   /* Status colors */
-  --success:    #00ff9d;
+  --success:    #7c5cff;
   --warning:    #ffb800;
   --danger:     #ff5e62;
 
@@ -64,6 +64,21 @@ input, select, textarea, button {
   font-family: var(--font);
 }
 
+/* Browser autofill (Chrome/Safari) forces a white background + dark text, which
+   makes our white-on-dark inputs unreadable. Pin the dark surface + light text. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset;
+          box-shadow: 0 0 0 1000px var(--bg-2) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* ─────────────────────────────────────────────────────────────
    Utility helpers
 ─────────────────────────────────────────────────────────────── */
@@ -74,6 +89,33 @@ input, select, textarea, button {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Animated gradient text — flows violet → cyan → violet */
+.gtext-anim {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gtext-shift 6s linear infinite;
+}
+@keyframes gtext-shift {
+  to { background-position: 300% 0; }
+}
+
+/* Glassmorphism panel */
+.glass {
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .08);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+/* Entrance fade-up (CSS fallback for non-motion elements) */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Pulsing dot (animated indicator) */
@@ -88,6 +130,19 @@ input, select, textarea, button {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%      { opacity: .35; }
+}
+
+/* Spinner (route-transition loader) */
+.spinner {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Primary button (gradient) */
@@ -177,6 +232,25 @@ input, select, textarea, button {
 .card-base:hover {
   background: var(--card-hover);
   border-color: var(--border-2);
+}
+
+/* Interactive (clickable) cards — subtle lift + neon-mint glow on hover */
+.card-interactive {
+  transition: transform .2s var(--ease-out), border-color .22s, box-shadow .25s var(--ease-out);
+  will-change: transform;
+}
+.card-interactive:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  box-shadow: 0 14px 44px -14px rgba(124, 92, 255, .28);
+}
+
+/* Visible keyboard-focus ring (accessibility) */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 /* Scrollbars — match the dark theme */

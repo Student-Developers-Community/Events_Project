@@ -29,8 +29,8 @@ export default function NavLinks({ isAuthed }: { isAuthed: boolean }) {
             className="block px-3.5 py-1.5 rounded-md text-[13.5px] font-medium transition-colors"
             style={{
               color: isActive(item.href) ? "var(--text)" : "var(--muted)",
-              background: isActive(item.href) ? "rgba(0,255,157,.1)" : "transparent",
-              border: isActive(item.href) ? "1px solid rgba(0,255,157,.25)" : "1px solid transparent",
+              background: isActive(item.href) ? "rgba(124, 92, 255,.1)" : "transparent",
+              border: isActive(item.href) ? "1px solid rgba(124, 92, 255,.25)" : "1px solid transparent",
             }}
           >
             {item.label}

@@ -8,7 +8,7 @@ export const metadata = { title: "All events · Super Admin" };
 
 const APPROVAL_PILL: Record<string, { bg: string; color: string }> = {
   pending:  { bg: "rgba(251,191,36,.15)", color: "#fbbf24" },
-  approved: { bg: "rgba(0,255,157,.15)",  color: "var(--accent)" },
+  approved: { bg: "rgba(124, 92, 255,.15)",  color: "var(--accent)" },
   rejected: { bg: "rgba(239,68,68,.12)",  color: "#fca5a5" },
 };
 

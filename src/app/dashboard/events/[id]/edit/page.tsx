@@ -48,6 +48,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
               cover_image_url: e.cover_image_url,
               contact_email: e.contact_email,
               contact_phone: e.contact_phone,
+              questions: e.questions,
             }}
           />
         </div>

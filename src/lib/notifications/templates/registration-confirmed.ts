@@ -38,13 +38,13 @@ export function renderRegistrationConfirmed(d: ConfirmedTemplateData): Rendered 
 
     <tr><td style="padding:0 24px 20px 24px;">
       <table role="presentation"><tr>
-        <td style="background:linear-gradient(135deg,#00ff9d,#00d4ff);color:#001a10;font-weight:900;font-size:12px;padding:6px 10px;border-radius:6px;">TE</td>
+        <td style="background:linear-gradient(135deg,#7c5cff,#00d4ff);color:#001a10;font-weight:900;font-size:12px;padding:6px 10px;border-radius:6px;">TE</td>
         <td style="padding-left:10px;color:#fff;font-weight:bold;font-size:15px;">TechEvent</td>
       </tr></table>
     </td></tr>
 
     <tr><td style="padding:0 24px 16px 24px;">
-      <span style="display:inline-block;background:rgba(0,255,157,0.15);color:#80ffd1;border:1px solid rgba(0,255,157,0.3);padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">✓ Ticket confirmed</span>
+      <span style="display:inline-block;background:rgba(124, 92, 255,0.15);color:#b9a7ff;border:1px solid rgba(124, 92, 255,0.3);padding:4px 10px;border-radius:9999px;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">✓ Ticket confirmed</span>
     </td></tr>
 
     <tr><td style="padding:0 24px 8px 24px;">
@@ -59,7 +59,7 @@ export function renderRegistrationConfirmed(d: ConfirmedTemplateData): Rendered 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a14;border:1px solid #1a1a2a;border-radius:10px;">
         <tr><td style="padding:14px 18px;font-size:13.5px;color:#fff;border-bottom:1px solid #1a1a2a;">📅 &nbsp;${escape(when)}</td></tr>
         <tr><td style="padding:14px 18px;font-size:13.5px;color:#fff;border-bottom:1px solid #1a1a2a;">📍 &nbsp;${escape(where)}</td></tr>
-        <tr><td style="padding:14px 18px;font-size:13.5px;color:#fff;border-bottom:1px solid #1a1a2a;">🎟️ &nbsp;${escape(d.tier_name)} · <span style="color:#00ff9d;">${formatINR(d.amount_paise)}</span></td></tr>
+        <tr><td style="padding:14px 18px;font-size:13.5px;color:#fff;border-bottom:1px solid #1a1a2a;">🎟️ &nbsp;${escape(d.tier_name)} · <span style="color:#7c5cff;">${formatINR(d.amount_paise)}</span></td></tr>
         <tr><td style="padding:14px 18px;font-size:13.5px;color:#fff;">👤 &nbsp;${escape(d.attendee_name)} <span style="color:#6a6a80;">(${escape(d.attendee_email)})</span></td></tr>
       </table>
     </td></tr>
@@ -76,12 +76,12 @@ export function renderRegistrationConfirmed(d: ConfirmedTemplateData): Rendered 
     </td></tr>
 
     <tr><td style="padding:0 24px 24px 24px;">
-      <a href="${ticketUrl}" style="display:inline-block;background:linear-gradient(135deg,#00ff9d,#00d4ff);color:#001a10;text-decoration:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:8px;">View ticket page →</a>
+      <a href="${ticketUrl}" style="display:inline-block;background:linear-gradient(135deg,#7c5cff,#00d4ff);color:#001a10;text-decoration:none;font-weight:700;font-size:14px;padding:11px 18px;border-radius:8px;">View ticket page →</a>
     </td></tr>
 
     <tr><td style="padding:0 24px 32px 24px;font-size:12px;color:#6a6a80;line-height:1.6;">
       <p style="margin:0;">Organised by <span style="color:#fff;">${escape(d.organiser_name)}</span> · TechEvent</p>
-      <p style="margin:10px 0 0 0;">Manage your tickets: <a href="${d.app_url}/my-tickets" style="color:#80ffd1;">${d.app_url}/my-tickets</a></p>
+      <p style="margin:10px 0 0 0;">Manage your tickets: <a href="${d.app_url}/my-tickets" style="color:#b9a7ff;">${d.app_url}/my-tickets</a></p>
       <p style="margin:6px 0 0 0;">Questions? Just reply to this email.</p>
     </td></tr>
 

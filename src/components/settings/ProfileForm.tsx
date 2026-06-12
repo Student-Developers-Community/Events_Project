@@ -116,7 +116,7 @@ export default function ProfileForm({ defaults }: { defaults: Defaults }) {
       {state?.ok && (
         <div
           className="px-3 py-2 rounded-md text-[13px]"
-          style={{ background: "rgba(0,255,157,.08)", border: "1px solid rgba(0,255,157,.3)", color: "var(--accent-3)" }}
+          style={{ background: "rgba(124, 92, 255,.08)", border: "1px solid rgba(124, 92, 255,.3)", color: "var(--accent-3)" }}
         >
           ✓ {state.message ?? "Saved"}
         </div>
