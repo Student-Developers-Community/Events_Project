@@ -12,6 +12,7 @@ export type MyTicketRow = {
     slug: string;
     title: string;
     starts_at: string;
+    ends_at: string;
     timezone: string;
     venue_name: string | null;
     city: string | null;
@@ -34,7 +35,7 @@ export async function listMyTickets(): Promise<MyTicketRow[]> {
     .select(`
       id, qr_token, status, attendee_name, amount_paise, confirmed_at,
       events (
-        slug, title, starts_at, timezone, venue_name, city, is_online,
+        slug, title, starts_at, ends_at, timezone, venue_name, city, is_online,
         category, cover_image_url
       )
     `)

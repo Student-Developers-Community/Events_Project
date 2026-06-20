@@ -64,6 +64,11 @@ function toLocalInput(iso?: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Now, as a datetime-local string — used as the `min` so past dates can't be picked. */
+function nowLocalInput(): string {
+  return toLocalInput(new Date().toISOString());
+}
+
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return (
@@ -196,10 +201,10 @@ export default function EventCreateForm({
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Starts at *">
-          <input name="starts_at" type="datetime-local" required defaultValue={toLocalInput(defaults.starts_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+          <input name="starts_at" type="datetime-local" required min={nowLocalInput()} defaultValue={toLocalInput(defaults.starts_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
         </Field>
         <Field label="Ends at *">
-          <input name="ends_at" type="datetime-local" required defaultValue={toLocalInput(defaults.ends_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+          <input name="ends_at" type="datetime-local" required min={nowLocalInput()} defaultValue={toLocalInput(defaults.ends_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
         </Field>
       </div>
 

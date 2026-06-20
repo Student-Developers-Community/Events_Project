@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { getCurrentOrganiser } from "@/lib/auth/session";
-import { listMyEvents } from "@/lib/db/organiser-events";
-import { listMyTickets } from "@/lib/db/my-tickets";
+import { listMyEvents, type OrganiserEventRow } from "@/lib/db/organiser-events";
+import { listMyTickets, type MyTicketRow } from "@/lib/db/my-tickets";
 import { formatEventDate, categoryIcon } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -26,10 +26,13 @@ export default async function DashboardPage() {
   const organiser = await getCurrentOrganiser();
   if (!organiser) redirect("/auth/login");
 
-  const [hosting, tickets] = await Promise.all([
-    listMyEvents(),
-    listMyTickets(),
-  ]);
+  const [hosting, tickets] = await Promise.all([listMyEvents(), listMyTickets()]);
+
+  const now = Date.now();
+  const upcomingHosting = hosting.filter((e) => new Date(e.ends_at).getTime() >= now);
+  const pastHosting     = hosting.filter((e) => new Date(e.ends_at).getTime() <  now);
+  const upcomingTickets = tickets.filter((t) => !t.events || new Date(t.events.ends_at).getTime() >= now);
+  const pastTickets     = tickets.filter((t) => t.events && new Date(t.events.ends_at).getTime() < now);
 
   return (
     <>
@@ -60,7 +63,9 @@ export default async function DashboardPage() {
           <div className="flex items-end justify-between mb-4">
             <h2 className="font-bold text-xl">Events I&apos;m hosting</h2>
             {hosting.length > 0 && (
-              <span className="text-[12.5px]" style={{ color: "var(--dim)" }}>{hosting.length} total</span>
+              <span className="text-[12.5px]" style={{ color: "var(--dim)" }}>
+                {upcomingHosting.length} upcoming · {pastHosting.length} past
+              </span>
             )}
           </div>
 
@@ -76,45 +81,15 @@ export default async function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {hosting.map((e) => {
-                const s = HOSTING_STATUS[e.status];
-                return (
-                  <Link
-                    key={e.id}
-                    href={`/dashboard/events/${e.id}`}
-                    className="card-base p-5 no-underline flex items-center gap-5"
-                    style={{ color: "var(--text)" }}
-                  >
-                    <div
-                      className="w-12 h-12 rounded-md flex items-center justify-center text-xl shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(124, 92, 255,.15), rgba(0,212,255,.15))",
-                        border: "1px solid var(--border)",
-                      }}
-                    >
-                      {categoryIcon(e.category)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-[15.5px] truncate">{e.title}</h3>
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0"
-                          style={{ background: s.bg, color: s.color }}
-                        >
-                          {s.label}
-                        </span>
-                      </div>
-                      <div className="text-[13px] flex gap-3 flex-wrap" style={{ color: "var(--muted)" }}>
-                        <span>{formatEventDate(e.starts_at, "Asia/Kolkata")}</span>
-                        <span>·</span>
-                        <span>{e.is_online ? "Online" : (e.venue_name || e.city || "Venue TBA")}</span>
-                      </div>
-                    </div>
-                    <span style={{ color: "var(--muted)" }}>→</span>
-                  </Link>
-                );
-              })}
+            <div className="flex flex-col gap-6">
+              <Group label="Upcoming" count={upcomingHosting.length} empty="No upcoming events.">
+                {upcomingHosting.map((e) => <HostingCard key={e.id} e={e} />)}
+              </Group>
+              {pastHosting.length > 0 && (
+                <Group label="Past events" count={pastHosting.length}>
+                  {pastHosting.map((e) => <HostingCard key={e.id} e={e} past />)}
+                </Group>
+              )}
             </div>
           )}
         </section>
@@ -142,66 +117,105 @@ export default async function DashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {tickets.slice(0, 5).map((t) => {
-                const s = TICKET_STATUS[t.status] ?? TICKET_STATUS.pending;
-                const ev = t.events;
-                const isPending = t.status === "pending";
-                const href = isPending && ev
-                  ? `/events/${ev.slug}/register/pending?qr=${encodeURIComponent(t.qr_token)}`
-                  : ev
-                    ? `/events/${ev.slug}/register/success?qr=${encodeURIComponent(t.qr_token)}`
-                    : "#";
-
-                return (
-                  <Link
-                    key={t.id}
-                    href={href}
-                    className="card-base p-5 no-underline flex items-center gap-5"
-                    style={{ color: "var(--text)" }}
-                  >
-                    <div
-                      className="w-12 h-12 rounded-md flex items-center justify-center text-xl shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(0,212,255,.15), rgba(124, 92, 255,.15))",
-                        border: "1px solid var(--border)",
-                      }}
-                    >
-                      {ev ? categoryIcon(ev.category) : "🎟️"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-semibold text-[15.5px] truncate">{ev?.title ?? "Event"}</h3>
-                        <span
-                          className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0"
-                          style={{ background: s.bg, color: s.color }}
-                        >
-                          {s.label}
-                        </span>
-                      </div>
-                      <div className="text-[13px] flex gap-3 flex-wrap" style={{ color: "var(--muted)" }}>
-                        {ev?.starts_at && <span>{formatEventDate(ev.starts_at, ev.timezone)}</span>}
-                        {ev && <span>·</span>}
-                        <span>{ev ? (ev.is_online ? "Online" : (ev.venue_name || ev.city)) : ""}</span>
-                      </div>
-                    </div>
-                    <span style={{ color: "var(--muted)" }}>{isPending ? "Pay →" : "QR →"}</span>
-                  </Link>
-                );
-              })}
-              {tickets.length > 5 && (
-                <Link
-                  href="/my-tickets"
-                  className="text-[13px] text-center py-3"
-                  style={{ color: "var(--accent-3)" }}
-                >
-                  See all {tickets.length} tickets →
-                </Link>
+            <div className="flex flex-col gap-6">
+              <Group label="Upcoming" count={upcomingTickets.length} empty="No upcoming tickets.">
+                {upcomingTickets.slice(0, 6).map((t) => <TicketCard key={t.id} t={t} />)}
+              </Group>
+              {pastTickets.length > 0 && (
+                <Group label="Past events" count={pastTickets.length}>
+                  {pastTickets.slice(0, 6).map((t) => <TicketCard key={t.id} t={t} past />)}
+                </Group>
               )}
             </div>
           )}
         </section>
       </main>
     </>
+  );
+}
+
+function Group({ label, count, empty, children }: { label: string; count: number; empty?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-wider mb-2.5" style={{ color: "var(--dim)" }}>
+        {label} {count > 0 && <span style={{ color: "var(--muted)" }}>· {count}</span>}
+      </p>
+      {count === 0 && empty ? (
+        <p className="text-[13px] py-2" style={{ color: "var(--dim)" }}>{empty}</p>
+      ) : (
+        <div className="flex flex-col gap-3">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function HostingCard({ e, past }: { e: OrganiserEventRow; past?: boolean }) {
+  const s = HOSTING_STATUS[e.status];
+  return (
+    <Link
+      href={`/dashboard/events/${e.id}`}
+      className="card-base card-interactive p-5 no-underline flex items-center gap-5"
+      style={{ color: "var(--text)", opacity: past ? 0.78 : 1 }}
+    >
+      <div
+        className="w-12 h-12 rounded-md flex items-center justify-center text-xl shrink-0"
+        style={{ background: "linear-gradient(135deg, rgba(124, 92, 255,.15), rgba(0,212,255,.15))", border: "1px solid var(--border)" }}
+      >
+        {categoryIcon(e.category)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <h3 className="font-semibold text-[15.5px] truncate">{e.title}</h3>
+          {past
+            ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0" style={{ background: "rgba(0,212,255,.12)", color: "var(--accent-2)" }}>PAST</span>
+            : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0" style={{ background: s.bg, color: s.color }}>{s.label}</span>}
+        </div>
+        <div className="text-[13px] flex gap-3 flex-wrap" style={{ color: "var(--muted)" }}>
+          <span>{formatEventDate(e.starts_at, "Asia/Kolkata")}</span>
+          <span>·</span>
+          <span>{e.is_online ? "Online" : (e.venue_name || e.city || "Venue TBA")}</span>
+        </div>
+      </div>
+      <span style={{ color: "var(--muted)" }}>→</span>
+    </Link>
+  );
+}
+
+function TicketCard({ t, past }: { t: MyTicketRow; past?: boolean }) {
+  const s = TICKET_STATUS[t.status] ?? TICKET_STATUS.pending;
+  const ev = t.events;
+  const isPending = t.status === "pending";
+  const href = isPending && ev
+    ? `/events/${ev.slug}/register/pending?qr=${encodeURIComponent(t.qr_token)}`
+    : ev
+      ? `/events/${ev.slug}/register/success?qr=${encodeURIComponent(t.qr_token)}`
+      : "#";
+  return (
+    <Link
+      href={href}
+      className="card-base card-interactive p-5 no-underline flex items-center gap-5"
+      style={{ color: "var(--text)", opacity: past ? 0.78 : 1 }}
+    >
+      <div
+        className="w-12 h-12 rounded-md flex items-center justify-center text-xl shrink-0"
+        style={{ background: "linear-gradient(135deg, rgba(0,212,255,.15), rgba(124, 92, 255,.15))", border: "1px solid var(--border)" }}
+      >
+        {ev ? categoryIcon(ev.category) : "🎟️"}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <h3 className="font-semibold text-[15.5px] truncate">{ev?.title ?? "Event"}</h3>
+          {past
+            ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0" style={{ background: "rgba(0,212,255,.12)", color: "var(--accent-2)" }}>PAST</span>
+            : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0" style={{ background: s.bg, color: s.color }}>{s.label}</span>}
+        </div>
+        <div className="text-[13px] flex gap-3 flex-wrap" style={{ color: "var(--muted)" }}>
+          {ev?.starts_at && <span>{formatEventDate(ev.starts_at, ev.timezone)}</span>}
+          {ev && <span>·</span>}
+          <span>{ev ? (ev.is_online ? "Online" : (ev.venue_name || ev.city)) : ""}</span>
+        </div>
+      </div>
+      <span style={{ color: "var(--muted)" }}>{past ? "QR →" : isPending ? "Pay →" : "QR →"}</span>
+    </Link>
   );
 }
