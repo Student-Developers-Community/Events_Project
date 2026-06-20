@@ -4,9 +4,11 @@ import Navbar from "@/components/Navbar";
 import TierAddForm from "@/components/dashboard/TierAddForm";
 import PublishToggle from "@/components/dashboard/PublishToggle";
 import GuestList from "@/components/dashboard/GuestList";
+import BlastForm from "@/components/dashboard/BlastForm";
 import { getCurrentOrganiser } from "@/lib/auth/session";
 import { getMyEventById } from "@/lib/db/organiser-events";
 import { listEventInvitations } from "@/lib/db/invitations";
+import { listEventBlasts } from "@/lib/db/blasts";
 import { formatEventDate, formatINR } from "@/lib/format";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -33,6 +35,7 @@ export default async function EventOverviewPage({
   if (!data) notFound();
 
   const invitations = await listEventInvitations(id);
+  const blasts = await listEventBlasts(id);
 
   const { event, tiers, attendee_count } = data;
   const s = STATUS_STYLE[event.status];
@@ -191,6 +194,9 @@ export default async function EventOverviewPage({
             <TierAddForm eventId={event.id} />
           </div>
         </section>
+
+        {/* Announcements (blasts) */}
+        <BlastForm eventId={event.id} blasts={blasts} />
 
         {/* Guest invitations */}
         <GuestList eventId={event.id} invitations={invitations} appUrl={APP_URL} />

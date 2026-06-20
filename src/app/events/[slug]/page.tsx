@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getPublicEventBySlug } from "@/lib/db/events";
+import { listEventBlasts } from "@/lib/db/blasts";
 import { formatEventDate, formatINR, categoryIcon } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   if (!data) notFound();
 
   const { event, tiers } = data;
+  const blasts = await listEventBlasts(event.id);
   const minPrice = tiers.length === 0 ? null : Math.min(...tiers.map((t) => t.price_paise));
   const ended = new Date(event.ends_at).getTime() < Date.now();
   const anyAvailable = tiers.some((t) => !t.is_sold_out);
@@ -89,6 +91,23 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                 <span style={{ color: "var(--muted)" }}>The organiser hasn&apos;t added a description yet.</span>
               )}
             </div>
+
+            {/* Announcements from the organiser */}
+            {blasts.length > 0 && (
+              <div className="mt-7">
+                <p className="text-[12px] uppercase tracking-wider mb-3 flex items-center gap-1.5" style={{ color: "var(--accent-3)" }}>
+                  📣 Announcements
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {blasts.map((b) => (
+                    <div key={b.id} className="p-4 rounded-lg" style={{ background: "var(--bg-2)", border: "1px solid var(--border)" }}>
+                      <p className="text-[13.5px] whitespace-pre-wrap" style={{ color: "var(--text)" }}>{b.message}</p>
+                      <p className="text-[11.5px] mt-1.5" style={{ color: "var(--dim)" }}>{new Date(b.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Questions? — organiser contact */}
             {(event.contact_email || event.contact_phone) && (
