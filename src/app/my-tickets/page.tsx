@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { getSessionUser } from "@/lib/auth/session";
-import { listMyTickets } from "@/lib/db/my-tickets";
+import { listMyTickets, type MyTicketRow } from "@/lib/db/my-tickets";
 import { formatEventDate, formatINR, categoryIcon } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,9 @@ export default async function MyTicketsPage() {
   if (!user) redirect("/auth/login?next=/my-tickets");
 
   const tickets = await listMyTickets();
+  const now = Date.now();
+  const upcoming = tickets.filter((t) => !t.events || new Date(t.events.ends_at).getTime() >= now);
+  const past = tickets.filter((t) => t.events && new Date(t.events.ends_at).getTime() < now);
 
   return (
     <>
@@ -49,63 +52,79 @@ export default async function MyTicketsPage() {
             </Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
-            {tickets.map((t) => {
-              const s = STATUS[t.status] ?? STATUS.pending;
-              const ev = t.events;
-              const isPending = t.status === "pending";
-              const href = isPending && ev
-                ? `/events/${ev.slug}/register/pending?qr=${encodeURIComponent(t.qr_token)}`
-                : ev
-                  ? `/events/${ev.slug}/register/success?qr=${encodeURIComponent(t.qr_token)}`
-                  : "#";
-
-              return (
-                <Link
-                  key={t.id}
-                  href={href}
-                  className="card-base p-5 no-underline flex items-center gap-5"
-                  style={{ color: "var(--text)" }}
-                >
-                  <div
-                    className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl shrink-0"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(124, 92, 255,.15), rgba(0,212,255,.15))",
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    {ev ? categoryIcon(ev.category) : "🎟️"}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-semibold text-[15.5px] truncate">{ev?.title ?? "Event"}</h3>
-                      <span
-                        className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0"
-                        style={{ background: s.bg, color: s.color }}
-                      >
-                        {s.label}
-                      </span>
-                    </div>
-                    <div className="text-[13px] flex gap-3 flex-wrap" style={{ color: "var(--muted)" }}>
-                      {ev?.starts_at && <span>{formatEventDate(ev.starts_at, ev.timezone)}</span>}
-                      {ev && <span>·</span>}
-                      <span>{ev ? (ev.is_online ? "Online" : (ev.venue_name || ev.city)) : ""}</span>
-                    </div>
-                  </div>
-
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-[14px]">{formatINR(t.amount_paise)}</p>
-                    <p className="text-[11px]" style={{ color: "var(--dim)" }}>
-                      {isPending ? "Pay to confirm →" : "View QR →"}
-                    </p>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="flex flex-col gap-7">
+            <TicketGroup label="Upcoming" count={upcoming.length} empty="No upcoming tickets.">
+              {upcoming.map((t) => <TicketRow key={t.id} t={t} />)}
+            </TicketGroup>
+            {past.length > 0 && (
+              <TicketGroup label="Past events" count={past.length}>
+                {past.map((t) => <TicketRow key={t.id} t={t} past />)}
+              </TicketGroup>
+            )}
           </div>
         )}
       </main>
     </>
+  );
+}
+
+function TicketGroup({ label, count, empty, children }: { label: string; count: number; empty?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-wider mb-2.5" style={{ color: "var(--dim)" }}>
+        {label} {count > 0 && <span style={{ color: "var(--muted)" }}>· {count}</span>}
+      </p>
+      {count === 0 && empty ? (
+        <p className="text-[13px]" style={{ color: "var(--dim)" }}>{empty}</p>
+      ) : (
+        <div className="flex flex-col gap-3">{children}</div>
+      )}
+    </div>
+  );
+}
+
+function TicketRow({ t, past }: { t: MyTicketRow; past?: boolean }) {
+  const s = STATUS[t.status] ?? STATUS.pending;
+  const ev = t.events;
+  const isPending = t.status === "pending";
+  const href = isPending && ev
+    ? `/events/${ev.slug}/register/pending?qr=${encodeURIComponent(t.qr_token)}`
+    : ev
+      ? `/events/${ev.slug}/register/success?qr=${encodeURIComponent(t.qr_token)}`
+      : "#";
+  return (
+    <Link
+      href={href}
+      className="card-base card-interactive p-5 no-underline flex items-center gap-5"
+      style={{ color: "var(--text)", opacity: past ? 0.78 : 1 }}
+    >
+      <div
+        className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl shrink-0"
+        style={{ background: "linear-gradient(135deg, rgba(124, 92, 255,.15), rgba(0,212,255,.15))", border: "1px solid var(--border)" }}
+      >
+        {ev ? categoryIcon(ev.category) : "🎟️"}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <h3 className="font-semibold text-[15.5px] truncate">{ev?.title ?? "Event"}</h3>
+          {past
+            ? <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0" style={{ background: "rgba(0,212,255,.12)", color: "var(--accent-2)" }}>PAST</span>
+            : <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider shrink-0" style={{ background: s.bg, color: s.color }}>{s.label}</span>}
+        </div>
+        <div className="text-[13px] flex gap-3 flex-wrap" style={{ color: "var(--muted)" }}>
+          {ev?.starts_at && <span>{formatEventDate(ev.starts_at, ev.timezone)}</span>}
+          {ev && <span>·</span>}
+          <span>{ev ? (ev.is_online ? "Online" : (ev.venue_name || ev.city)) : ""}</span>
+        </div>
+      </div>
+
+      <div className="text-right shrink-0">
+        <p className="font-bold text-[14px]">{formatINR(t.amount_paise)}</p>
+        <p className="text-[11px]" style={{ color: "var(--dim)" }}>
+          {past ? "View QR →" : isPending ? "Pay to confirm →" : "View QR →"}
+        </p>
+      </div>
+    </Link>
   );
 }

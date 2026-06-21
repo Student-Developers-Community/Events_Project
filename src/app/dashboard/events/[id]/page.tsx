@@ -9,6 +9,7 @@ import { getCurrentOrganiser } from "@/lib/auth/session";
 import { getMyEventById } from "@/lib/db/organiser-events";
 import { listEventInvitations } from "@/lib/db/invitations";
 import { listEventBlasts } from "@/lib/db/blasts";
+import { duplicateEventAction } from "@/lib/events/actions";
 import { formatEventDate, formatINR } from "@/lib/format";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -147,6 +148,16 @@ export default async function EventOverviewPage({
             >
               📷 Door scanner
             </Link>
+            <form action={duplicateEventAction.bind(null, event.id)}>
+              <button
+                type="submit"
+                className="btn-outline"
+                style={{ padding: ".65rem 1.2rem", fontSize: "13.5px" }}
+                title="Duplicate this event as a new draft (rehost) — set a new date, then publish for approval"
+              >
+                ♻️ Rehost
+              </button>
+            </form>
             <PublishToggle eventId={event.id} isPublished={isPublished} hasTiers={tiers.length > 0} isApproved={approval === "approved"} />
           </div>
         </div>

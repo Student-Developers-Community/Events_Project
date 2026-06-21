@@ -43,6 +43,12 @@ export async function createEventAction(
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const v = parsed.data;
+
+  // Can't create an event in the past.
+  if (new Date(v.starts_at).getTime() < Date.now()) {
+    return { ok: false, error: "Event start date can't be in the past." };
+  }
+
   const questions = parseQuestionsField(formData.get("questions"));
 
   const sb = await getSupabaseServerClient();
@@ -102,6 +108,80 @@ export async function createEventAction(
 
   revalidatePath("/dashboard");
   redirect(`/dashboard/events/${newEventId}`);
+}
+
+/**
+ * Rehost: duplicate an existing event into a fresh DRAFT (owner only).
+ * Copies content, questions and ticket tiers; resets dates to a placeholder
+ * (organiser sets the real future date on the edit page) and sold counts to 0.
+ * The new event starts as draft → publish → approval → live, like any other.
+ */
+export async function duplicateEventAction(eventId: string): Promise<void> {
+  const sb = await getSupabaseServerClient();
+  if (!sb) return;
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+
+  const { data: src } = await sb
+    .from("events")
+    .select("title, subtitle, description, category, is_online, venue_name, venue_address, city, online_url, total_capacity, cover_image_url, contact_email, contact_phone, questions, timezone")
+    .eq("id", eventId).eq("organiser_id", user.id).maybeSingle();
+  if (!src) return;
+
+  // Placeholder future window; organiser picks the real date on /edit.
+  const start = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+
+  const baseSlug = slugify(src.title) || withRandomSuffix("event");
+  let slug = withRandomSuffix(baseSlug);
+  let newId: string | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await sb.from("events").insert({
+      organiser_id: user.id,
+      slug,
+      title: src.title,
+      subtitle: src.subtitle,
+      description: src.description,
+      category: src.category,
+      status: "draft",
+      starts_at: start.toISOString(),
+      ends_at: end.toISOString(),
+      timezone: src.timezone,
+      is_online: src.is_online,
+      venue_name: src.venue_name,
+      venue_address: src.venue_address,
+      city: src.city,
+      online_url: src.online_url,
+      total_capacity: src.total_capacity,
+      cover_image_url: src.cover_image_url,
+      contact_email: src.contact_email,
+      contact_phone: src.contact_phone,
+      questions: src.questions ?? [],
+      created_by: user.id,
+      updated_by: user.id,
+    }).select("id").single();
+    if (!error && data) { newId = data.id; break; }
+    if (error?.code === "23505" && error.message.includes("slug")) { slug = withRandomSuffix(baseSlug); continue; }
+    return;
+  }
+  if (!newId) return;
+
+  // Copy ticket tiers (fresh rows → sold_count resets to 0).
+  const { data: tiers } = await sb
+    .from("ticket_tiers")
+    .select("name, description, price_paise, capacity, sort_order")
+    .eq("event_id", eventId).is("deleted_at", null);
+  if (tiers && tiers.length > 0) {
+    await sb.from("ticket_tiers").insert(
+      tiers.map((t) => ({
+        event_id: newId, name: t.name, description: t.description,
+        price_paise: t.price_paise, capacity: t.capacity, sort_order: t.sort_order,
+      })),
+    );
+  }
+
+  revalidatePath("/dashboard");
+  redirect(`/dashboard/events/${newId}/edit`);
 }
 
 /** Update an existing event the current organiser owns. */
