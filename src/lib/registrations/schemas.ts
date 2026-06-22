@@ -11,3 +11,19 @@ export const registerAttendeeSchema = z.object({
 });
 
 export type RegisterAttendeeInput = z.infer<typeof registerAttendeeSchema>;
+
+// ── Hackathon team registration ──
+export const teamMemberSchema = z.object({
+  name:  z.string().trim().min(2, "Member name too short").max(120),
+  email: z.string().trim().toLowerCase().email("Invalid member email"),
+});
+
+export const registerTeamSchema = z.object({
+  event_id:   z.string().uuid(),
+  team_name:  z.string().trim().min(2, "Team name too short").max(120),
+  college:    z.string().trim().max(120).optional().or(z.literal("")),
+  lead_phone: z.string().trim().regex(PHONE, "Enter a valid Indian phone number"),
+  members:    z.array(teamMemberSchema).min(1).max(20),
+});
+
+export type TeamMemberInput = z.infer<typeof teamMemberSchema>;

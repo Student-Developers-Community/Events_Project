@@ -41,10 +41,18 @@ export type PublicEvent = {
   contact_email: string | null;
   contact_phone: string | null;
   questions: EventQuestion[];
+  is_hackathon: boolean;
+  team_size: number | null;
+  eligibility_mode: "open" | "colleges";
+  entry_fee_paise: number;
+  allow_others: boolean;
+  others_quota: number | null;
   organiser_id: string;
   organiser_name: string;
   organiser_avatar: string | null;
 };
+
+export type EventCollege = { id: string; name: string; team_quota: number };
 
 export type PublicTier = {
   id: string;

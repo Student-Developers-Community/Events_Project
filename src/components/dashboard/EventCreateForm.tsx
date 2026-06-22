@@ -39,7 +39,16 @@ export type EventFormDefaults = {
   contact_email?: string | null;
   contact_phone?: string | null;
   questions?: EventQuestion[] | null;
+  is_hackathon?: boolean;
+  team_size?: number | null;
+  eligibility_mode?: "open" | "colleges";
+  entry_fee_rupees?: number | null;
+  colleges?: { name: string; team_quota: number }[];
+  allow_others?: boolean;
+  others_quota?: number | null;
 };
+
+type CollegeRow = { name: string; team_quota: number };
 
 const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
   { value: "text",     label: "Short text" },
@@ -95,6 +104,19 @@ export default function EventCreateForm({
   const [isOnline, setIsOnline] = useState(defaults.is_online ?? false);
   const [questions, setQuestions] = useState<EventQuestion[]>(defaults.questions ?? []);
 
+  // ── Hackathon settings ──
+  const [isHackathon, setIsHackathon] = useState(defaults.is_hackathon ?? false);
+  const [teamSize, setTeamSize] = useState<string>(defaults.team_size ? String(defaults.team_size) : "4");
+  const [entryFee, setEntryFee] = useState<string>(defaults.entry_fee_rupees != null ? String(defaults.entry_fee_rupees) : "0");
+  const [restrictColleges, setRestrictColleges] = useState((defaults.eligibility_mode ?? "open") === "colleges");
+  const [colleges, setColleges] = useState<CollegeRow[]>(defaults.colleges ?? []);
+  const [allowOthers, setAllowOthers] = useState(defaults.allow_others ?? false);
+  const [othersQuota, setOthersQuota] = useState<string>(defaults.others_quota != null ? String(defaults.others_quota) : "10");
+  const addCollege = () => setColleges((cs) => [...cs, { name: "", team_quota: 10 }]);
+  const updateCollege = (i: number, patch: Partial<CollegeRow>) =>
+    setColleges((cs) => cs.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const removeCollege = (i: number) => setColleges((cs) => cs.filter((_, idx) => idx !== i));
+
   const formRef = useRef<HTMLFormElement>(null);
   const [description, setDescription] = useState(defaults.description ?? "");
   const [aiBusy, setAiBusy] = useState(false);
@@ -142,6 +164,19 @@ export default function EventCreateForm({
         type="hidden"
         name="questions"
         value={JSON.stringify(questions.filter((q) => q.label.trim() !== ""))}
+      />
+
+      {/* Hackathon settings serialised for the server action. */}
+      {isHackathon && <input type="hidden" name="is_hackathon" value="on" />}
+      <input type="hidden" name="team_size" value={teamSize} />
+      <input type="hidden" name="entry_fee_rupees" value={entryFee} />
+      <input type="hidden" name="eligibility_mode" value={restrictColleges ? "colleges" : "open"} />
+      {restrictColleges && allowOthers && <input type="hidden" name="allow_others" value="on" />}
+      <input type="hidden" name="others_quota" value={othersQuota} />
+      <input
+        type="hidden"
+        name="colleges"
+        value={JSON.stringify(colleges.filter((c) => c.name.trim() !== "").map((c) => ({ name: c.name.trim(), team_quota: Number(c.team_quota) || 1 })))}
       />
 
       <Field label="Event title *">
@@ -242,6 +277,86 @@ export default function EventCreateForm({
             <input name="contact_phone" defaultValue={defaults.contact_phone ?? ""} placeholder="9876543210" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
           </Field>
         </div>
+      </div>
+
+      {/* Hackathon settings */}
+      <div className="pt-2" style={{ borderTop: "1px solid var(--border)" }}>
+        <label className="flex items-center gap-2.5 cursor-pointer mt-3">
+          <input type="checkbox" checked={isHackathon} onChange={(e) => setIsHackathon(e.target.checked)} className="w-4 h-4" />
+          <span className="text-[13.5px] font-semibold" style={{ color: "var(--text)" }}>This is a team hackathon</span>
+        </label>
+        <p className="text-[12px] mt-1 mb-3" style={{ color: "var(--dim)" }}>
+          Turns on team registration — a team lead signs up the whole team; each member gets their own QR.
+        </p>
+
+        {isHackathon && (
+          <div className="flex flex-col gap-4 p-4 rounded-lg" style={{ background: "var(--bg-2)", border: "1px solid var(--border)" }}>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Team size (members per team) *">
+                <input type="number" min="1" max="20" value={teamSize} onChange={(e) => setTeamSize(e.target.value)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+              </Field>
+              <Field label="Entry fee per team (₹) · 0 = free">
+                <input type="number" min="0" step="1" value={entryFee} onChange={(e) => setEntryFee(e.target.value)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+              </Field>
+            </div>
+
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={restrictColleges} onChange={(e) => setRestrictColleges(e.target.checked)} className="w-4 h-4" />
+              <span className="text-[13px]" style={{ color: "var(--text)" }}>Restrict to specific colleges (with per-college team quotas)</span>
+            </label>
+
+            {restrictColleges && (
+              <div className="flex flex-col gap-2">
+                {colleges.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      value={c.name}
+                      onChange={(e) => updateCollege(i, { name: e.target.value })}
+                      placeholder="College name"
+                      className="flex-1 px-3 py-2 rounded-md text-[13px] outline-none"
+                      style={fieldStyle}
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      value={c.team_quota}
+                      onChange={(e) => updateCollege(i, { team_quota: Number(e.target.value) })}
+                      className="w-24 px-3 py-2 rounded-md text-[13px] outline-none"
+                      style={fieldStyle}
+                      title="Team quota"
+                    />
+                    <span className="text-[12px] shrink-0" style={{ color: "var(--dim)" }}>teams</span>
+                    <button type="button" onClick={() => removeCollege(i)} className="text-[12px]" style={{ color: "#fca5a5" }}>✕</button>
+                  </div>
+                ))}
+                <button type="button" onClick={addCollege} className="btn-outline self-start" style={{ padding: ".45rem .9rem", fontSize: "12.5px" }}>
+                  + Add college
+                </button>
+                {colleges.length === 0 && (
+                  <p className="text-[12px]" style={{ color: "#fbbf24" }}>Add at least one college, or turn off the restriction.</p>
+                )}
+
+                {/* Others bucket */}
+                <div className="mt-2 pt-3" style={{ borderTop: "1px dashed var(--border)" }}>
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={allowOthers} onChange={(e) => setAllowOthers(e.target.checked)} className="w-4 h-4" />
+                    <span className="text-[13px]" style={{ color: "var(--text)" }}>Allow teams from other colleges (an &quot;Others&quot; option)</span>
+                  </label>
+                  {allowOthers && (
+                    <div className="flex items-center gap-2 mt-2 ml-7">
+                      <span className="text-[12.5px]" style={{ color: "var(--muted)" }}>Quota for &quot;Others&quot;:</span>
+                      <input type="number" min="1" value={othersQuota} onChange={(e) => setOthersQuota(e.target.value)} className="w-24 px-3 py-2 rounded-md text-[13px] outline-none" style={fieldStyle} />
+                      <span className="text-[12px]" style={{ color: "var(--dim)" }}>teams</span>
+                    </div>
+                  )}
+                  <p className="text-[12px] mt-1.5 ml-7" style={{ color: "var(--dim)" }}>
+                    Teams whose college isn&apos;t listed pick &quot;Others&quot; and type their college name.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Custom questions for attendees */}

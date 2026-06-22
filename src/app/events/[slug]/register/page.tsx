@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import RegistrationForm from "@/components/register/RegistrationForm";
+import TeamRegistrationForm from "@/components/register/TeamRegistrationForm";
 import { getPublicEventBySlug } from "@/lib/db/events";
+import { listEventColleges } from "@/lib/db/hackathon";
 import { formatEventDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +23,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ slug:
   const { event, tiers } = data;
   const activeTiers = tiers.filter((t) => !t.is_sold_out);
   const ended = new Date(event.ends_at).getTime() < Date.now();
+  const colleges = event.is_hackathon ? await listEventColleges(event.id) : [];
 
   return (
     <>
@@ -46,6 +49,18 @@ export default async function RegisterPage({ params }: { params: Promise<{ slug:
             <p className="text-sm" style={{ color: "var(--muted)" }}>
               This event has already taken place. Registration is no longer open.
             </p>
+          </div>
+        ) : event.is_hackathon ? (
+          <div className="card-base p-7">
+            <TeamRegistrationForm
+              eventId={event.id}
+              eventSlug={slug}
+              teamSize={event.team_size ?? 1}
+              entryFeePaise={event.entry_fee_paise}
+              eligibilityMode={event.eligibility_mode}
+              allowOthers={event.allow_others}
+              colleges={colleges.map((c) => ({ name: c.name, team_quota: c.team_quota }))}
+            />
           </div>
         ) : activeTiers.length === 0 ? (
           <div className="card-base p-10 text-center">

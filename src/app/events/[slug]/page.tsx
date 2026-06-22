@@ -28,7 +28,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
   const minPrice = tiers.length === 0 ? null : Math.min(...tiers.map((t) => t.price_paise));
   const ended = new Date(event.ends_at).getTime() < Date.now();
   const anyAvailable = tiers.some((t) => !t.is_sold_out);
-  const canRegister = anyAvailable && !ended;
+  const canRegister = !ended && (event.is_hackathon || anyAvailable);
 
   return (
     <>
@@ -192,7 +192,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                   opacity: canRegister ? 1 : 0.5,
                 }}
               >
-                {ended ? "Event ended" : anyAvailable ? "Register now →" : "Sold out"}
+                {ended ? "Event ended" : event.is_hackathon ? "Register your team →" : anyAvailable ? "Register now →" : "Sold out"}
               </Link>
 
               <p className="text-[11px] mt-3 text-center" style={{ color: "var(--dim)" }}>

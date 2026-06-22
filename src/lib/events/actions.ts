@@ -3,11 +3,48 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { eventCreateSchema, tierCreateSchema, parseQuestionsField } from "./schemas";
+import { eventCreateSchema, tierCreateSchema, parseQuestionsField, parseCollegesField } from "./schemas";
 import { slugify, withRandomSuffix } from "./slug";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateEventDescription, type DescriptionInput, type DescriptionResult } from "@/lib/ai/generate-description";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
+
+/** Parse the hackathon-related fields from the event form. */
+function parseHackathonFields(formData: FormData) {
+  const isHack = formData.get("is_hackathon") === "on";
+  const teamSize = Number(formData.get("team_size"));
+  const fee = Number(formData.get("entry_fee_rupees"));
+  const mode = String(formData.get("eligibility_mode") ?? "open");
+  const eligibility = isHack && mode === "colleges" ? "colleges" : "open";
+  const allowOthers = eligibility === "colleges" && formData.get("allow_others") === "on";
+  const othersQuota = Number(formData.get("others_quota"));
+  return {
+    is_hackathon: isHack,
+    team_size: isHack && Number.isFinite(teamSize) && teamSize >= 1 ? Math.min(20, Math.floor(teamSize)) : null,
+    eligibility_mode: eligibility,
+    entry_fee_paise: isHack && Number.isFinite(fee) && fee > 0 ? Math.round(fee * 100) : 0,
+    allow_others: allowOthers,
+    others_quota: allowOthers && Number.isInteger(othersQuota) && othersQuota > 0 ? othersQuota : null,
+  };
+}
+
+/** Replace an event's allowed-colleges list to match the submitted form. */
+async function syncColleges(
+  sb: SupabaseClient,
+  eventId: string,
+  hack: { is_hackathon: boolean; eligibility_mode: string },
+  formData: FormData,
+) {
+  await sb.from("event_colleges").delete().eq("event_id", eventId);
+  if (!hack.is_hackathon || hack.eligibility_mode !== "colleges") return;
+  const colleges = parseCollegesField(formData.get("colleges"));
+  if (colleges.length > 0) {
+    await sb.from("event_colleges").insert(
+      colleges.map((c) => ({ event_id: eventId, name: c.name, team_quota: c.team_quota })),
+    );
+  }
+}
 
 /** Generate an event description with AI (organiser-gated). */
 export async function generateDescriptionAction(input: DescriptionInput): Promise<DescriptionResult> {
@@ -50,6 +87,7 @@ export async function createEventAction(
   }
 
   const questions = parseQuestionsField(formData.get("questions"));
+  const hack = parseHackathonFields(formData);
 
   const sb = await getSupabaseServerClient();
   if (!sb) return { ok: false, error: "Supabase is not configured" };
@@ -85,6 +123,12 @@ export async function createEventAction(
         contact_email: v.contact_email || null,
         contact_phone: v.contact_phone || null,
         questions,
+        is_hackathon: hack.is_hackathon,
+        team_size: hack.team_size,
+        eligibility_mode: hack.eligibility_mode,
+        entry_fee_paise: hack.entry_fee_paise,
+        allow_others: hack.allow_others,
+        others_quota: hack.others_quota,
         created_by: user.id,
         updated_by: user.id,
       })
@@ -106,6 +150,8 @@ export async function createEventAction(
 
   if (!newEventId) return { ok: false, error: "Couldn't generate a unique URL — try a different title" };
 
+  await syncColleges(sb, newEventId, hack, formData);
+
   revalidatePath("/dashboard");
   redirect(`/dashboard/events/${newEventId}`);
 }
@@ -124,7 +170,7 @@ export async function duplicateEventAction(eventId: string): Promise<void> {
 
   const { data: src } = await sb
     .from("events")
-    .select("title, subtitle, description, category, is_online, venue_name, venue_address, city, online_url, total_capacity, cover_image_url, contact_email, contact_phone, questions, timezone")
+    .select("title, subtitle, description, category, is_online, venue_name, venue_address, city, online_url, total_capacity, cover_image_url, contact_email, contact_phone, questions, timezone, is_hackathon, team_size, eligibility_mode, entry_fee_paise, allow_others, others_quota")
     .eq("id", eventId).eq("organiser_id", user.id).maybeSingle();
   if (!src) return;
 
@@ -157,6 +203,12 @@ export async function duplicateEventAction(eventId: string): Promise<void> {
       contact_email: src.contact_email,
       contact_phone: src.contact_phone,
       questions: src.questions ?? [],
+      is_hackathon: src.is_hackathon,
+      team_size: src.team_size,
+      eligibility_mode: src.eligibility_mode,
+      entry_fee_paise: src.entry_fee_paise,
+      allow_others: src.allow_others,
+      others_quota: src.others_quota,
       created_by: user.id,
       updated_by: user.id,
     }).select("id").single();
@@ -177,6 +229,15 @@ export async function duplicateEventAction(eventId: string): Promise<void> {
         event_id: newId, name: t.name, description: t.description,
         price_paise: t.price_paise, capacity: t.capacity, sort_order: t.sort_order,
       })),
+    );
+  }
+
+  // Copy allowed colleges (quotas reset — no teams yet).
+  const { data: cols } = await sb
+    .from("event_colleges").select("name, team_quota").eq("event_id", eventId);
+  if (cols && cols.length > 0) {
+    await sb.from("event_colleges").insert(
+      cols.map((c) => ({ event_id: newId, name: c.name, team_quota: c.team_quota })),
     );
   }
 
@@ -211,6 +272,7 @@ export async function updateEventAction(
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   const v = parsed.data;
   const questions = parseQuestionsField(formData.get("questions"));
+  const hack = parseHackathonFields(formData);
 
   const sb = await getSupabaseServerClient();
   if (!sb) return { ok: false, error: "Supabase is not configured" };
@@ -220,6 +282,12 @@ export async function updateEventAction(
   const { error } = await sb
     .from("events")
     .update({
+      is_hackathon: hack.is_hackathon,
+      team_size: hack.team_size,
+      eligibility_mode: hack.eligibility_mode,
+      entry_fee_paise: hack.entry_fee_paise,
+      allow_others: hack.allow_others,
+      others_quota: hack.others_quota,
       title: v.title,
       subtitle: v.subtitle || null,
       description: v.description || null,
@@ -248,6 +316,8 @@ export async function updateEventAction(
     .eq("organiser_id", user.id);
 
   if (error) return { ok: false, error: error.message };
+
+  await syncColleges(sb, eventId, hack, formData);
 
   revalidatePath(`/dashboard/events/${eventId}`);
   revalidatePath("/events");

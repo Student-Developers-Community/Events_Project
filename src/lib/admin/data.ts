@@ -102,6 +102,9 @@ export async function getEventForAdmin(id: string) {
     .select("id, name, price_paise, capacity, sold_count, is_active")
     .eq("event_id", id).is("deleted_at", null).order("sort_order");
 
+  const { data: colleges } = await svc.from("event_colleges")
+    .select("id, name, team_quota").eq("event_id", id).order("name");
+
   const { data: regs } = await svc.from("registrations")
     .select("id, attendee_name, attendee_email, attendee_phone, status, amount_paise, created_at, checked_in_at, qr_token")
     .eq("event_id", id).is("deleted_at", null).order("created_at", { ascending: false });
@@ -114,5 +117,5 @@ export async function getEventForAdmin(id: string) {
     revenue_paise: list.filter((r) => ["confirmed", "checked_in"].includes(r.status)).reduce((s, r) => s + (r.amount_paise || 0), 0),
   };
 
-  return { event, organiser, tiers: tiers ?? [], registrations: list, insights };
+  return { event, organiser, tiers: tiers ?? [], colleges: colleges ?? [], registrations: list, insights };
 }

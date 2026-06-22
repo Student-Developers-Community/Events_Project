@@ -23,6 +23,12 @@ export type OrganiserEventRow = {
   contact_email: string | null;
   contact_phone: string | null;
   questions: EventQuestion[];
+  is_hackathon: boolean;
+  team_size: number | null;
+  eligibility_mode: "open" | "colleges";
+  entry_fee_paise: number;
+  allow_others: boolean;
+  others_quota: number | null;
 };
 
 export type OrganiserTierRow = {
@@ -46,7 +52,7 @@ export async function listMyEvents(): Promise<OrganiserEventRow[]> {
 
   const { data, error } = await sb
     .from("events")
-    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone, questions")
+    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone, questions, is_hackathon, team_size, eligibility_mode, entry_fee_paise, allow_others, others_quota")
     .eq("organiser_id", user.id)
     .is("deleted_at", null)
     .order("starts_at", { ascending: false });
@@ -71,7 +77,7 @@ export async function getMyEventById(id: string): Promise<{
 
   const { data: event } = await sb
     .from("events")
-    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone, questions")
+    .select("id, slug, title, subtitle, status, approval_status, rejection_reason, category, starts_at, ends_at, city, venue_name, is_online, total_capacity, cover_image_url, description, online_url, contact_email, contact_phone, questions, is_hackathon, team_size, eligibility_mode, entry_fee_paise, allow_others, others_quota")
     .eq("id", id)
     .eq("organiser_id", user.id)
     .is("deleted_at", null)

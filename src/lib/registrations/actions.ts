@@ -4,9 +4,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
-import { registerAttendeeSchema } from "./schemas";
+import { registerAttendeeSchema, registerTeamSchema, type TeamMemberInput } from "./schemas";
 import { enqueue } from "@/lib/notifications/dispatch";
 import type { EventQuestion } from "@/lib/db/types";
+
+export type TeamResult =
+  | { ok: true; qr_token: string; slug: string }
+  | { ok: false; error: string };
 
 export type ActionResult =
   | { ok: true; qr_token: string; free: boolean }
@@ -212,4 +216,146 @@ export async function confirmWithoutPaymentAction(formData: FormData): Promise<v
 
   revalidatePath(`/events/${eventSlug}`);
   redirect(`/events/${eventSlug}/register/success?qr=${encodeURIComponent(qrToken)}`);
+}
+
+/**
+ * Hackathon team registration. The team lead signs up the whole team:
+ * validates eligibility + per-college team quota, creates the team and one
+ * confirmed registration (with QR) per member.
+ */
+export async function registerTeamAction(
+  _: TeamResult | undefined,
+  formData: FormData,
+): Promise<TeamResult> {
+  // members come as a JSON string from the form
+  let members: TeamMemberInput[] = [];
+  try {
+    const raw = JSON.parse(String(formData.get("members") ?? "[]"));
+    if (Array.isArray(raw)) members = raw;
+  } catch { /* ignore */ }
+
+  const parsed = registerTeamSchema.safeParse({
+    event_id:   formData.get("event_id"),
+    team_name:  formData.get("team_name"),
+    college:    formData.get("college") ?? "",
+    lead_phone: formData.get("lead_phone"),
+    members,
+  });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  const v = parsed.data;
+
+  const svc = getSupabaseServiceClient();
+  if (!svc) return { ok: false, error: "Server is missing SUPABASE_SERVICE_ROLE_KEY." };
+
+  // Load + gate the event.
+  const { data: ev } = await svc
+    .from("events")
+    .select("slug, status, visibility, approval_status, deleted_at, ends_at, is_hackathon, team_size, eligibility_mode, entry_fee_paise, allow_others, others_quota")
+    .eq("id", v.event_id).maybeSingle();
+  if (!ev || ev.deleted_at || ev.status !== "published" || ev.visibility !== "public" || ev.approval_status !== "approved") {
+    return { ok: false, error: "This event isn't open for registration." };
+  }
+  if (!ev.is_hackathon) return { ok: false, error: "This event isn't a team hackathon." };
+  if (ev.ends_at && new Date(ev.ends_at).getTime() < Date.now()) {
+    return { ok: false, error: "Registration is closed — this event has ended." };
+  }
+
+  // Exact team size.
+  if (ev.team_size && v.members.length !== ev.team_size) {
+    return { ok: false, error: `Teams must have exactly ${ev.team_size} members.` };
+  }
+
+  // Unique emails within the team.
+  const emails = v.members.map((m) => m.email.toLowerCase());
+  if (new Set(emails).size !== emails.length) {
+    return { ok: false, error: "Each member needs a unique email." };
+  }
+
+  // College eligibility + per-college TEAM quota (with optional "Others" bucket).
+  const college = (v.college ?? "").trim();
+  if (ev.eligibility_mode === "colleges") {
+    if (!college) return { ok: false, error: "Please select your college." };
+    const { data: allowed } = await svc
+      .from("event_colleges").select("name, team_quota").eq("event_id", v.event_id);
+    const { data: existingTeams } = await svc
+      .from("event_teams").select("college").eq("event_id", v.event_id);
+    const teamsList = existingTeams ?? [];
+    const match = (allowed ?? []).find((c) => c.name.toLowerCase() === college.toLowerCase());
+
+    if (match) {
+      const used = teamsList.filter((t) => (t.college ?? "").toLowerCase() === college.toLowerCase()).length;
+      if (used >= match.team_quota) return { ok: false, error: `Registrations are full for ${match.name}.` };
+    } else if (ev.allow_others) {
+      // "Others" bucket — any college not in the list, counted together.
+      const allowedSet = new Set((allowed ?? []).map((c) => c.name.toLowerCase()));
+      const othersUsed = teamsList.filter((t) => t.college && !allowedSet.has(t.college.toLowerCase())).length;
+      if (ev.others_quota != null && othersUsed >= ev.others_quota) {
+        return { ok: false, error: "Registrations are full for the “Others” category." };
+      }
+    } else {
+      return { ok: false, error: "Your college isn't in the allowed list for this event." };
+    }
+  }
+
+  // No member already registered for this event (active).
+  const { data: existing } = await svc
+    .from("registrations").select("attendee_email")
+    .eq("event_id", v.event_id).is("deleted_at", null)
+    .in("status", ["pending", "confirmed", "checked_in"]);
+  const taken = new Set((existing ?? []).map((r) => r.attendee_email.toLowerCase()));
+  const clash = emails.find((e) => taken.has(e));
+  if (clash) return { ok: false, error: `${clash} is already registered for this event.` };
+
+  // Create the team.
+  const lead = v.members[0];
+  const { data: team, error: teamErr } = await svc
+    .from("event_teams")
+    .insert({
+      event_id: v.event_id, name: v.team_name, college: college || null,
+      lead_name: lead.name, lead_email: lead.email, lead_phone: v.lead_phone,
+      member_count: v.members.length,
+    })
+    .select("id").single();
+  if (teamErr) {
+    if (teamErr.code === "23505") return { ok: false, error: "A team with that name already exists for this event." };
+    return { ok: false, error: teamErr.message };
+  }
+
+  // One confirmed registration (with QR) per member. Fee charged to the lead.
+  const nowIso = new Date().toISOString();
+  const rows = v.members.map((m, i) => ({
+    event_id: v.event_id,
+    tier_id: null,
+    user_id: null,
+    attendee_name: m.name,
+    attendee_email: m.email,
+    attendee_phone: i === 0 ? v.lead_phone : null,
+    status: "confirmed",
+    confirmed_at: nowIso,
+    amount_paise: i === 0 ? (ev.entry_fee_paise ?? 0) : 0,
+    team_id: team.id,
+    is_team_lead: i === 0,
+    metadata: { source: "hackathon_team", team_name: v.team_name, college: college || null },
+  }));
+  const { data: inserted, error: regErr } = await svc
+    .from("registrations").insert(rows).select("attendee_email, qr_token, event_id, id");
+  if (regErr) {
+    // roll back the team so a retry can re-use the name
+    await svc.from("event_teams").delete().eq("id", team.id);
+    return { ok: false, error: regErr.message };
+  }
+
+  // Email each member their confirmation + QR.
+  for (const r of inserted ?? []) {
+    await enqueue({
+      registration_id: r.id, event_id: r.event_id, channel: "email",
+      template: "registration_confirmed", recipient: r.attendee_email,
+      payload: { qr_token: r.qr_token },
+    });
+  }
+
+  revalidatePath(`/events/${ev.slug}`);
+  revalidatePath(`/dashboard/events/${v.event_id}`);
+  const leadReg = (inserted ?? []).find((r) => r.attendee_email.toLowerCase() === lead.email.toLowerCase());
+  return { ok: true, qr_token: leadReg?.qr_token ?? "", slug: ev.slug };
 }

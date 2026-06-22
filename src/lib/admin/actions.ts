@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getSupabaseServiceClient } from "@/lib/supabase/service";
 import { requireSuperAdmin } from "@/lib/auth/super-admin";
-import { eventCreateSchema, parseQuestionsField } from "@/lib/events/schemas";
+import { eventCreateSchema, parseQuestionsField, parseCollegesField } from "@/lib/events/schemas";
 
 export type AdminResult = { ok: true } | { ok: false; error: string };
 
@@ -44,6 +44,15 @@ export async function adminUpdateEventAction(
   const v = parsed.data;
   const questions = parseQuestionsField(formData.get("questions"));
 
+  // Hackathon fields (super-admin can edit these too).
+  const isHack = formData.get("is_hackathon") === "on";
+  const teamSizeNum = Number(formData.get("team_size"));
+  const feeNum = Number(formData.get("entry_fee_rupees"));
+  const mode = String(formData.get("eligibility_mode") ?? "open");
+  const eligibility = isHack && mode === "colleges" ? "colleges" : "open";
+  const allowOthers = eligibility === "colleges" && formData.get("allow_others") === "on";
+  const othersQuotaNum = Number(formData.get("others_quota"));
+
   const { error } = await svc.from("events").update({
     title: v.title,
     subtitle: v.subtitle || null,
@@ -60,10 +69,27 @@ export async function adminUpdateEventAction(
     contact_email: v.contact_email || null,
     contact_phone: v.contact_phone || null,
     questions,
+    is_hackathon: isHack,
+    team_size: isHack && Number.isFinite(teamSizeNum) && teamSizeNum >= 1 ? Math.min(20, Math.floor(teamSizeNum)) : null,
+    eligibility_mode: eligibility,
+    entry_fee_paise: isHack && Number.isFinite(feeNum) && feeNum > 0 ? Math.round(feeNum * 100) : 0,
+    allow_others: allowOthers,
+    others_quota: allowOthers && Number.isInteger(othersQuotaNum) && othersQuotaNum > 0 ? othersQuotaNum : null,
     updated_by: user.id,
   }).eq("id", eventId);
 
   if (error) return { ok: false, error: error.message };
+
+  // Sync allowed colleges (replace the set).
+  await svc.from("event_colleges").delete().eq("event_id", eventId);
+  if (isHack && eligibility === "colleges") {
+    const colleges = parseCollegesField(formData.get("colleges"));
+    if (colleges.length > 0) {
+      await svc.from("event_colleges").insert(
+        colleges.map((c) => ({ event_id: eventId, name: c.name, team_quota: c.team_quota })),
+      );
+    }
+  }
 
   revalidatePath(`/admin/events/${eventId}`);
   revalidatePath("/admin/events");

@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import EventCreateForm from "@/components/dashboard/EventCreateForm";
 import { getCurrentOrganiser } from "@/lib/auth/session";
 import { getMyEventById } from "@/lib/db/organiser-events";
+import { listEventColleges } from "@/lib/db/hackathon";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Edit event · TechEvent" };
@@ -16,6 +17,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   const data = await getMyEventById(id);
   if (!data) notFound();
   const e = data.event;
+  const colleges = e.is_hackathon ? await listEventColleges(id) : [];
 
   return (
     <>
@@ -49,6 +51,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
               contact_email: e.contact_email,
               contact_phone: e.contact_phone,
               questions: e.questions,
+              is_hackathon: e.is_hackathon,
+              team_size: e.team_size,
+              eligibility_mode: e.eligibility_mode,
+              entry_fee_rupees: e.entry_fee_paise ? e.entry_fee_paise / 100 : 0,
+              colleges: colleges.map((c) => ({ name: c.name, team_quota: c.team_quota })),
             }}
           />
         </div>

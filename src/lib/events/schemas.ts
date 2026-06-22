@@ -56,6 +56,32 @@ export function parseQuestionsField(raw: FormDataEntryValue | null): EventQuesti
   return result.success ? (result.data as EventQuestion[]) : [];
 }
 
+// ── Hackathon: allowed colleges with per-college team quota ──
+export const eventCollegeSchema = z.object({
+  name:       z.string().trim().min(1, "College name required").max(120),
+  team_quota: z.coerce.number().int().positive().max(10000),
+});
+export const eventCollegesSchema = z.array(eventCollegeSchema).max(100);
+
+export type ParsedCollege = { name: string; team_quota: number };
+
+/** Parse the JSON string the form submits in the hidden `colleges` field. */
+export function parseCollegesField(raw: FormDataEntryValue | null): ParsedCollege[] {
+  if (!raw || typeof raw !== "string" || raw.trim() === "") return [];
+  let json: unknown;
+  try { json = JSON.parse(raw); } catch { return []; }
+  const result = eventCollegesSchema.safeParse(json);
+  if (!result.success) return [];
+  // de-dupe by lower(name)
+  const seen = new Set<string>();
+  const out: ParsedCollege[] = [];
+  for (const c of result.data) {
+    const key = c.name.toLowerCase();
+    if (!seen.has(key)) { seen.add(key); out.push({ name: c.name, team_quota: c.team_quota }); }
+  }
+  return out;
+}
+
 export const tierCreateSchema = z.object({
   event_id:     z.string().uuid(),
   name:         z.string().trim().min(1, "Tier name required").max(80),

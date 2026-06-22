@@ -16,6 +16,7 @@ export default async function AdminEditEventPage({ params }: { params: Promise<{
   if (!data) notFound();
   const e = data.event;
   const tiers = data.tiers;
+  const colleges = data.colleges ?? [];
 
   return (
     <main className="max-w-2xl mx-auto px-7 py-10">
@@ -52,6 +53,11 @@ export default async function AdminEditEventPage({ params }: { params: Promise<{
             contact_email: e.contact_email,
             contact_phone: e.contact_phone,
             questions: e.questions,
+            is_hackathon: e.is_hackathon,
+            team_size: e.team_size,
+            eligibility_mode: e.eligibility_mode,
+            entry_fee_rupees: e.entry_fee_paise ? e.entry_fee_paise / 100 : 0,
+            colleges: colleges.map((c: { name: string; team_quota: number }) => ({ name: c.name, team_quota: c.team_quota })),
           }}
         />
       </div>

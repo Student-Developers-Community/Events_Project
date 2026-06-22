@@ -5,10 +5,12 @@ import TierAddForm from "@/components/dashboard/TierAddForm";
 import PublishToggle from "@/components/dashboard/PublishToggle";
 import GuestList from "@/components/dashboard/GuestList";
 import BlastForm from "@/components/dashboard/BlastForm";
+import CollegeQuotaManager from "@/components/dashboard/CollegeQuotaManager";
 import { getCurrentOrganiser } from "@/lib/auth/session";
 import { getMyEventById } from "@/lib/db/organiser-events";
 import { listEventInvitations } from "@/lib/db/invitations";
 import { listEventBlasts } from "@/lib/db/blasts";
+import { listEventTeams, listEventColleges } from "@/lib/db/hackathon";
 import { duplicateEventAction } from "@/lib/events/actions";
 import { formatEventDate, formatINR } from "@/lib/format";
 
@@ -39,6 +41,16 @@ export default async function EventOverviewPage({
   const blasts = await listEventBlasts(id);
 
   const { event, tiers, attendee_count } = data;
+  const teams = event.is_hackathon ? await listEventTeams(id) : [];
+  const hackColleges = event.is_hackathon && event.eligibility_mode === "colleges" ? await listEventColleges(id) : [];
+  const allowedSet = new Set(hackColleges.map((c) => c.name.toLowerCase()));
+  const collegeFill = hackColleges.map((c) => ({
+    id: c.id, name: c.name, team_quota: c.team_quota,
+    used: teams.filter((t) => (t.college ?? "").toLowerCase() === c.name.toLowerCase()).length,
+  }));
+  const othersInfo = event.is_hackathon && event.eligibility_mode === "colleges" && event.allow_others
+    ? { quota: event.others_quota, used: teams.filter((t) => t.college && !allowedSet.has(t.college.toLowerCase())).length }
+    : null;
   const s = STATUS_STYLE[event.status];
   const isPublished = event.status === "published";
   const ended = new Date(event.ends_at).getTime() < Date.now();
@@ -158,12 +170,13 @@ export default async function EventOverviewPage({
                 ♻️ Rehost
               </button>
             </form>
-            <PublishToggle eventId={event.id} isPublished={isPublished} hasTiers={tiers.length > 0} isApproved={approval === "approved"} />
+            <PublishToggle eventId={event.id} isPublished={isPublished} hasTiers={tiers.length > 0 || event.is_hackathon} isApproved={approval === "approved"} />
           </div>
         </div>
 
 
-        {/* Tiers */}
+        {/* Tiers — not used for hackathons (entry fee is set in hackathon settings) */}
+        {!event.is_hackathon && (
         <section className="mb-9">
           <h2 className="sec-title text-2xl mb-2">Ticket tiers</h2>
           <p className="text-[13.5px] mb-5" style={{ color: "var(--muted)" }}>
@@ -205,6 +218,49 @@ export default async function EventOverviewPage({
             <TierAddForm eventId={event.id} />
           </div>
         </section>
+        )}
+
+        {/* Teams (hackathon) */}
+        {event.is_hackathon && (
+          <section className="mb-9">
+            <div className="flex items-end justify-between mb-3 flex-wrap gap-2">
+              <h2 className="sec-title text-2xl">Teams</h2>
+              <span className="text-[12.5px]" style={{ color: "var(--dim)" }}>
+                {teams.length} {teams.length === 1 ? "team" : "teams"} · {event.team_size}/team
+              </span>
+            </div>
+
+            {event.eligibility_mode === "colleges" && (
+              <CollegeQuotaManager
+                eventId={event.id}
+                colleges={collegeFill}
+                others={othersInfo}
+                exportHref={`/dashboard/events/${event.id}/colleges/export`}
+              />
+            )}
+
+            {teams.length === 0 ? (
+              <div className="card-base p-8 text-center" style={{ borderStyle: "dashed" }}>
+                <p className="text-[13px]" style={{ color: "var(--muted)" }}>No teams registered yet.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2.5">
+                {teams.map((t) => (
+                  <div key={t.id} className="card-base p-4">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-semibold text-[15px]">{t.name}</h3>
+                      {t.college && <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ background: "rgba(124,92,255,.1)", color: "var(--accent-3)" }}>{t.college}</span>}
+                      <span className="text-[12px]" style={{ color: "var(--dim)" }}>{t.member_count} members</span>
+                    </div>
+                    <p className="text-[12.5px]" style={{ color: "var(--muted)" }}>
+                      Lead: {t.lead_name} · {t.lead_email}{t.lead_phone ? ` · ${t.lead_phone}` : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Announcements (blasts) */}
         <BlastForm eventId={event.id} blasts={blasts} />
