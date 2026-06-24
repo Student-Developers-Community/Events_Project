@@ -19,7 +19,7 @@ export default async function AdminEditEventPage({ params }: { params: Promise<{
   const colleges = data.colleges ?? [];
 
   return (
-    <main className="max-w-2xl mx-auto px-7 py-10">
+    <main className="max-w-5xl mx-auto px-5 sm:px-7 py-10">
       <Link href={`/admin/events/${id}`} className="text-[13px] mb-3 inline-block" style={{ color: "var(--muted)" }}>
         ← Back to review
       </Link>
@@ -28,11 +28,10 @@ export default async function AdminEditEventPage({ params }: { params: Promise<{
         <h1 className="sec-title">Edit “{e.title}”</h1>
         <p className="sec-sub mt-2">
           Fix anything wrong before approving. Changes are saved to the organiser’s event.
-          (Ticket tiers are managed by the organiser.)
         </p>
       </header>
 
-      <div className="card-base p-7">
+      <div>
         <EventCreateForm
           mode="edit"
           eventId={id}

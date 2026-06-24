@@ -8,8 +8,9 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
  * the user's own folder (event-covers/<uid>/<file>), then writes the public
  * URL into a hidden input named `cover_image_url` so it submits with the form.
  */
-export default function ImageUpload({ name = "cover_image_url", defaultUrl = "" }: { name?: string; defaultUrl?: string }) {
-  const [url, setUrl] = useState<string>(defaultUrl);
+export default function ImageUpload({ name = "cover_image_url", defaultUrl = "", onChange }: { name?: string; defaultUrl?: string; onChange?: (url: string) => void }) {
+  const [url, setUrlState] = useState<string>(defaultUrl);
+  const setUrl = (u: string) => { setUrlState(u); onChange?.(u); };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);

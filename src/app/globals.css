@@ -64,6 +64,25 @@ input, select, textarea, button {
   font-family: var(--font);
 }
 
+/* Form-field polish: smooth transitions, muted placeholders, and a clear
+   violet focus ring + accent border (the inputs previously had no focus state,
+   which made them feel like a plain form). Applies app-wide. */
+input, select, textarea {
+  transition: border-color .16s var(--ease-out), box-shadow .16s var(--ease-out), background-color .16s;
+}
+input::placeholder, textarea::placeholder { color: var(--dim); }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+/* Native date/time picker indicator tinted for the dark theme */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+  cursor: pointer;
+}
+
 /* Browser autofill (Chrome/Safari) forces a white background + dark text, which
    makes our white-on-dark inputs unreadable. Pin the dark surface + light text. */
 input:-webkit-autofill,

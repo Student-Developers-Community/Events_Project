@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { createEventAction, updateEventAction, generateDescriptionAction, type ActionResult } from "@/lib/events/actions";
 import type { EventQuestion, QuestionType } from "@/lib/db/types";
 import ImageUpload from "./ImageUpload";
+import EventPreview from "./EventPreview";
 
 const CATEGORIES = [
   { value: "hackathon",  label: "Hackathon" },
@@ -123,6 +124,16 @@ export default function EventCreateForm({
   const [minDate, setMinDate] = useState("");
   useEffect(() => { setMinDate(nowLocalInput()); }, []);
   const [description, setDescription] = useState(defaults.description ?? "");
+
+  // Controlled fields that drive the live preview (Luma-style).
+  const [title, setTitle] = useState(defaults.title ?? "");
+  const [subtitle, setSubtitle] = useState(defaults.subtitle ?? "");
+  const [category, setCategory] = useState(defaults.category ?? "hackathon");
+  const [startsAt, setStartsAt] = useState(toLocalInput(defaults.starts_at));
+  const [venueName, setVenueName] = useState(defaults.venue_name ?? "");
+  const [city, setCity] = useState(defaults.city ?? "");
+  const [onlineUrl, setOnlineUrl] = useState(defaults.online_url ?? "");
+  const [coverUrl, setCoverUrl] = useState(defaults.cover_image_url ?? "");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
@@ -161,6 +172,7 @@ export default function EventCreateForm({
     setQuestions((qs) => qs.filter((q) => q.id !== id));
 
   return (
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
     <form ref={formRef} action={formAction} className="flex flex-col gap-5">
       {mode === "edit" && eventId && <input type="hidden" name="event_id" value={eventId} />}
       {/* Custom questions serialised as JSON — parsed server-side. Empty labels dropped. */}
@@ -184,11 +196,11 @@ export default function EventCreateForm({
       />
 
       <Field label="Event title *">
-        <input name="title" required defaultValue={defaults.title ?? ""} placeholder="e.g. Hack for Hyderabad" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+        <input name="title" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Hack for Hyderabad" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
       </Field>
 
       <Field label="Tagline (one-liner)">
-        <input name="subtitle" defaultValue={defaults.subtitle ?? ""} placeholder="What's the hook?" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+        <input name="subtitle" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="What's the hook?" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
       </Field>
 
       <label className="flex flex-col gap-1.5">
@@ -224,12 +236,12 @@ export default function EventCreateForm({
       </label>
 
       <Field label="Cover image (optional)">
-        <ImageUpload defaultUrl={defaults.cover_image_url ?? ""} />
+        <ImageUpload defaultUrl={defaults.cover_image_url ?? ""} onChange={setCoverUrl} />
       </Field>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Category *">
-          <select name="category" required defaultValue={defaults.category ?? "hackathon"} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle}>
+          <select name="category" required value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle}>
             {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </Field>
@@ -240,7 +252,7 @@ export default function EventCreateForm({
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Starts at *">
-          <input name="starts_at" type="datetime-local" required min={minDate || undefined} defaultValue={toLocalInput(defaults.starts_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+          <input name="starts_at" type="datetime-local" required min={minDate || undefined} value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
         </Field>
         <Field label="Ends at *">
           <input name="ends_at" type="datetime-local" required min={minDate || undefined} defaultValue={toLocalInput(defaults.ends_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
@@ -254,15 +266,15 @@ export default function EventCreateForm({
 
       {isOnline ? (
         <Field label="Online URL *">
-          <input name="online_url" type="url" defaultValue={defaults.online_url ?? ""} placeholder="https://meet.google.com/..." className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+          <input name="online_url" type="url" value={onlineUrl} onChange={(e) => setOnlineUrl(e.target.value)} placeholder="https://meet.google.com/..." className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
         </Field>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           <Field label="Venue *">
-            <input name="venue_name" defaultValue={defaults.venue_name ?? ""} placeholder="Draper Startup House" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+            <input name="venue_name" value={venueName} onChange={(e) => setVenueName(e.target.value)} placeholder="Draper Startup House" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
           </Field>
           <Field label="City *">
-            <input name="city" defaultValue={defaults.city ?? ""} placeholder="Hyderabad" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+            <input name="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Hyderabad" className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
           </Field>
         </div>
       )}
@@ -440,6 +452,24 @@ export default function EventCreateForm({
         </p>
       )}
     </form>
+
+      <aside className="hidden lg:block">
+        <EventPreview
+          title={title}
+          subtitle={subtitle}
+          category={category}
+          startsAt={startsAt}
+          isOnline={isOnline}
+          venueName={venueName}
+          city={city}
+          onlineUrl={onlineUrl}
+          coverUrl={coverUrl}
+          isHackathon={isHackathon}
+          teamSize={teamSize}
+          entryFeeRupees={entryFee}
+        />
+      </aside>
+    </div>
   );
 }
 

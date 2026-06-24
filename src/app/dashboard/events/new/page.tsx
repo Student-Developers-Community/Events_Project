@@ -13,18 +13,16 @@ export default async function NewEventPage() {
   return (
     <>
       <Navbar />
-      <main className="max-w-2xl mx-auto px-7 py-12">
+      <main className="max-w-5xl mx-auto px-5 sm:px-7 py-10 sm:py-12">
         <header className="mb-8">
           <Link href="/dashboard" className="text-[13px] mb-3 inline-block" style={{ color: "var(--muted)" }}>
             ← Back to dashboard
           </Link>
           <h1 className="sec-title">Create event</h1>
-          <p className="sec-sub mt-2">Tell us the basics. You can edit anything later.</p>
+          <p className="sec-sub mt-2">Fill in the details — the preview on the right updates as you type.</p>
         </header>
 
-        <div className="card-base p-7">
-          <EventCreateForm />
-        </div>
+        <EventCreateForm />
       </main>
     </>
   );

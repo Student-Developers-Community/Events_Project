@@ -22,7 +22,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   return (
     <>
       <Navbar />
-      <main className="max-w-2xl mx-auto px-7 py-12">
+      <main className="max-w-5xl mx-auto px-5 sm:px-7 py-10 sm:py-12">
         <Link href={`/dashboard/events/${id}`} className="text-[13px] mb-3 inline-block" style={{ color: "var(--muted)" }}>
           ← Back to event
         </Link>
@@ -31,7 +31,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           <p className="sec-sub mt-2">Update details, seats, venue, or contact info.</p>
         </header>
 
-        <div className="card-base p-7">
+        <div>
           <EventCreateForm
             mode="edit"
             eventId={id}
