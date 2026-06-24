@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Sparkles } from "lucide-react";
 import { createEventAction, updateEventAction, generateDescriptionAction, type ActionResult } from "@/lib/events/actions";
@@ -118,6 +118,10 @@ export default function EventCreateForm({
   const removeCollege = (i: number) => setColleges((cs) => cs.filter((_, idx) => idx !== i));
 
   const formRef = useRef<HTMLFormElement>(null);
+  // Compute the date-picker `min` on the client only — using new Date() during
+  // render causes a server/client hydration mismatch that breaks the form.
+  const [minDate, setMinDate] = useState("");
+  useEffect(() => { setMinDate(nowLocalInput()); }, []);
   const [description, setDescription] = useState(defaults.description ?? "");
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -236,10 +240,10 @@ export default function EventCreateForm({
 
       <div className="grid sm:grid-cols-2 gap-4">
         <Field label="Starts at *">
-          <input name="starts_at" type="datetime-local" required min={nowLocalInput()} defaultValue={toLocalInput(defaults.starts_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+          <input name="starts_at" type="datetime-local" required min={minDate || undefined} defaultValue={toLocalInput(defaults.starts_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
         </Field>
         <Field label="Ends at *">
-          <input name="ends_at" type="datetime-local" required min={nowLocalInput()} defaultValue={toLocalInput(defaults.ends_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
+          <input name="ends_at" type="datetime-local" required min={minDate || undefined} defaultValue={toLocalInput(defaults.ends_at)} className="w-full px-3.5 py-2.5 rounded-md text-sm outline-none" style={fieldStyle} />
         </Field>
       </div>
 

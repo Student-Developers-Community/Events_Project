@@ -1,3 +1,15 @@
+import Link from "next/link";
+import { ENTITY } from "@/lib/legal";
+
+const LINKS = [
+  { href: "/about", label: "About" },
+  { href: "/contact", label: "Contact" },
+  { href: "/terms", label: "Terms" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/refund", label: "Refunds" },
+  { href: "/shipping", label: "Shipping" },
+];
+
 export default function Footer() {
   return (
     <footer
@@ -13,11 +25,18 @@ export default function Footer() {
             TE
           </div>
           <span className="font-bold text-[13.5px]" style={{ color: "var(--text)" }}>
-            TechEvent
+            {ENTITY.brand}
           </span>
         </div>
-        <p className="text-[13px]">
-          © 2026 TechEvent · A Luma-inspired events platform for the Indian tech ecosystem.
+
+        <nav className="flex items-center justify-center gap-x-5 gap-y-2 flex-wrap mb-4 text-[13px]">
+          {LINKS.map((l) => (
+            <Link key={l.href} href={l.href} style={{ color: "var(--muted)" }}>{l.label}</Link>
+          ))}
+        </nav>
+
+        <p className="text-[12.5px]">
+          © 2026 {ENTITY.legalName} · {ENTITY.brand} — {ENTITY.lob} for the Indian tech ecosystem.
         </p>
       </div>
     </footer>

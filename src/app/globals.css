@@ -104,6 +104,13 @@ select:-webkit-autofill {
   to { background-position: 300% 0; }
 }
 
+/* Legal / policy pages */
+.legal-prose h2 { font-size: 1.05rem; font-weight: 700; margin-top: 1.5rem; color: var(--text); }
+.legal-prose p, .legal-prose li { font-size: 14px; line-height: 1.75; color: var(--muted); }
+.legal-prose ul { padding-left: 1.2rem; list-style: disc; display: flex; flex-direction: column; gap: .35rem; }
+.legal-prose a { color: var(--accent-3); }
+.legal-prose strong { color: var(--text); }
+
 /* Glassmorphism panel */
 .glass {
   background: rgba(255, 255, 255, .04);

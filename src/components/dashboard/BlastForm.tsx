@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Megaphone } from "lucide-react";
 import { postBlastAction, deleteBlastAction, type BlastResult } from "@/lib/blasts/actions";
@@ -28,6 +28,10 @@ function timeAgo(iso: string): string {
 
 export default function BlastForm({ eventId, blasts }: { eventId: string; blasts: Blast[] }) {
   const [state, action] = useActionState<BlastResult | undefined, FormData>(postBlastAction, undefined);
+  // Relative time is non-deterministic (Date.now + locale) → compute after mount
+  // so server and client render the same initial HTML (no hydration mismatch).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => { if (state?.ok) formRef.current?.reset(); }, [state]);
@@ -76,7 +80,7 @@ export default function BlastForm({ eventId, blasts }: { eventId: string; blasts
                   <button type="submit" className="text-[11.5px] shrink-0" style={{ color: "#fca5a5" }}>Delete</button>
                 </form>
               </div>
-              <p className="text-[11.5px] mt-1.5" style={{ color: "var(--dim)" }}>{timeAgo(b.created_at)}</p>
+              <p className="text-[11.5px] mt-1.5" style={{ color: "var(--dim)" }} suppressHydrationWarning>{mounted ? timeAgo(b.created_at) : ""}</p>
             </div>
           ))}
         </div>
