@@ -7,7 +7,6 @@ const LINKS = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
   { href: "/refund", label: "Refunds" },
-  { href: "/shipping", label: "Shipping" },
 ];
 
 export default function Footer() {

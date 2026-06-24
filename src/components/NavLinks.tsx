@@ -13,8 +13,9 @@ export default function NavLinks({ isAuthed }: { isAuthed: boolean }) {
       ]
     : [
         { href: "/events",     label: "Discover" },
-        { href: "/organisers", label: "For Organisers" },
-        { href: "/pricing",    label: "Pricing" },
+        // Hidden for now — re-enable when ready:
+        // { href: "/organisers", label: "For Organisers" },
+        // { href: "/pricing",    label: "Pricing" },
       ];
 
   const isActive = (href: string) =>
